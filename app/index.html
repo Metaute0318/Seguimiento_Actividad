@@ -1,0 +1,940 @@
+<title>Seguimiento de Actividad</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: panel de control en cristal. Menú lateral flotante (íconos en pantallas medianas, barra inferior en celular). Luz ambiente azul de marca y naranja. Misma línea de Rendimientos AyC. */
+:root {
+  --bg: #04070d;
+  --surface: rgba(14, 22, 38, .66);
+  --surface-solid: #0e1626;
+  --surface-2: rgba(255, 255, 255, .045);
+  --surface-3: rgba(255, 255, 255, .08);
+  --ink: #edf2fa;
+  --ink-2: #a8b5c8;
+  --muted: #6f7d92;
+  --line: rgba(140, 170, 220, .13);
+  --line-2: rgba(140, 170, 220, .24);
+  --accent: #4d8dff;
+  --accent-2: #8b6cff;
+  --accent-ink: #04101f;
+  --accent-soft: rgba(77, 141, 255, .15);
+  --orange: #ff7a3d;
+  --glow-acc: rgba(77, 141, 255, .55);
+  --glow-or: rgba(255, 122, 61, .5);
+  --good: #33d17a; --warn: #f5b83d; --crit: #ff5a5f;
+  --good-bg: rgba(51, 209, 122, .13); --warn-bg: rgba(245, 184, 61, .13); --crit-bg: rgba(255, 90, 95, .13);
+  --good-ink: #7ff0ad; --warn-ink: #ffd27a; --crit-ink: #ff9da0;
+  --amb-1: rgba(37, 99, 235, .34); --amb-2: rgba(234, 108, 46, .26); --amb-3: rgba(30, 65, 100, .6);
+  --shadow: 0 12px 40px rgba(0, 0, 0, .35);
+  --tip-bg: #e9eef7; --tip-ink: #0b1424;
+  --logo-blanco: block; --logo-azul: none;
+  --font-display: "Sora", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --r: 18px;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]):not(.tema-oscuro) {
+    --bg: #eef2f8; --surface: rgba(255, 255, 255, .74); --surface-solid: #ffffff; --surface-2: rgba(30, 65, 100, .05); --surface-3: rgba(30, 65, 100, .09);
+    --ink: #0e1b2c; --ink-2: #3f4f66; --muted: #67768e; --line: rgba(30, 65, 100, .12); --line-2: rgba(30, 65, 100, .24);
+    --accent: #1f5fd6; --accent-2: #6a4fe0; --accent-ink: #ffffff; --accent-soft: rgba(31, 95, 214, .11);
+    --orange: #eb6834; --glow-acc: rgba(31, 95, 214, .22); --glow-or: rgba(235, 104, 52, .22);
+    --good: #0ca30c; --warn: #d99a00; --crit: #d03b3b; --good-bg: #dcf2dc; --warn-bg: #fbefc9; --crit-bg: #f8dcda;
+    --good-ink: #0d5a0d; --warn-ink: #6b4a00; --crit-ink: #8f1f1f;
+    --amb-1: rgba(37, 99, 235, .13); --amb-2: rgba(234, 108, 46, .11); --amb-3: rgba(30, 65, 100, .10);
+    --shadow: 0 8px 30px rgba(30, 65, 100, .10); --tip-bg: #0e1b2c; --tip-ink: #eef2f8;
+    --logo-blanco: none; --logo-azul: block;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"]:not(.tema-oscuro), html:root.tema-claro {
+  --bg: #eef2f8; --surface: rgba(255, 255, 255, .74); --surface-solid: #ffffff; --surface-2: rgba(30, 65, 100, .05); --surface-3: rgba(30, 65, 100, .09);
+  --ink: #0e1b2c; --ink-2: #3f4f66; --muted: #67768e; --line: rgba(30, 65, 100, .12); --line-2: rgba(30, 65, 100, .24);
+  --accent: #1f5fd6; --accent-2: #6a4fe0; --accent-ink: #ffffff; --accent-soft: rgba(31, 95, 214, .11);
+  --orange: #eb6834; --glow-acc: rgba(31, 95, 214, .22); --glow-or: rgba(235, 104, 52, .22);
+  --good: #0ca30c; --warn: #d99a00; --crit: #d03b3b; --good-bg: #dcf2dc; --warn-bg: #fbefc9; --crit-bg: #f8dcda;
+  --good-ink: #0d5a0d; --warn-ink: #6b4a00; --crit-ink: #8f1f1f;
+  --amb-1: rgba(37, 99, 235, .13); --amb-2: rgba(234, 108, 46, .11); --amb-3: rgba(30, 65, 100, .10);
+  --shadow: 0 8px 30px rgba(30, 65, 100, .10); --tip-bg: #0e1b2c; --tip-ink: #eef2f8;
+  --logo-blanco: none; --logo-azul: block;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.45; }
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(900px 600px at 105% -10%, var(--amb-1), transparent 60%),
+    radial-gradient(700px 520px at 100% 85%, var(--amb-2), transparent 62%),
+    radial-gradient(800px 600px at -10% 10%, var(--amb-3), transparent 60%); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.logo-b { display: var(--logo-blanco); }
+.logo-a { display: var(--logo-azul); }
+
+/* Estructura */
+.app { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 18px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.side { position: sticky; top: calc(16px + env(safe-area-inset-top, 0px)); align-self: start; height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); margin-block: 16px; display: flex; flex-direction: column; gap: 18px; padding: 20px 14px; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, .05); }
+.side .logo { padding: 2px 8px 6px; }
+.side .logo img { width: 100%; max-width: 180px; height: auto; }
+.nav { display: flex; flex-direction: column; gap: 4px; }
+.nav button { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: none; color: var(--ink-2); padding: 10px 12px; border-radius: 12px; cursor: pointer; font-weight: 500; text-align: left; white-space: nowrap; }
+.nav button svg { width: 20px; height: 20px; flex: none; }
+.nav button:hover { background: var(--surface-2); color: var(--ink); }
+.nav button[aria-current="page"] { background: var(--accent-soft); color: var(--ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent); }
+.nav button[aria-current="page"] svg { color: var(--accent); filter: drop-shadow(0 0 6px var(--glow-acc)); }
+.side-foot { margin-top: auto; display: grid; gap: 8px; }
+.theme-btn { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); border-radius: 12px; padding: 9px 12px; cursor: pointer; font-weight: 500; }
+.theme-btn svg { width: 18px; height: 18px; }
+.side-act { font-size: 12px; color: var(--muted); padding: 0 6px; line-height: 1.35; }
+.side-act b { display: block; color: var(--ink); font-weight: 600; font-size: 13px; }
+
+.content { min-width: 0; padding-block: 18px 48px; }
+.topbar { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.topbar .t-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.topbar .t-logo { display: none; height: 40px; width: auto; }
+.topbar h1 { margin: 2px 0 0; font-family: var(--font-display); font-weight: 600; font-size: 26px; letter-spacing: -.01em; line-height: 1.1; text-wrap: balance; }
+.topbar .t-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pill-glass { display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 13px; color: var(--ink-2); max-width: 100%; }
+.pill-glass select { border: 0; background: transparent; padding: 0 18px 0 0; font-weight: 600; color: var(--ink); max-width: 260px; }
+.pill-glass select option { background: var(--surface-solid); color: var(--ink); }
+.pill-glass .live { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 8px var(--good); flex: none; }
+.topbar .theme-btn { display: none; padding: 7px 10px; }
+
+/* Tarjetas */
+.grid { display: grid; gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; min-width: 0; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, .04); position: relative; }
+.card h2, .card h3 { margin: 0 0 12px; font-family: var(--font-display); font-weight: 600; letter-spacing: -.005em; text-wrap: balance; }
+.card h2 { font-size: 19px; }
+.card h3 { font-size: 15px; }
+.card h3 small, .card h2 small, h3 small { font-family: var(--font-body); font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 6px; }
+.eyebrow { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+.hint { color: var(--muted); font-size: 12px; font-weight: 400; }
+
+/* Controles */
+.filters { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
+.f { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.f > span, .field > label, .lbl { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+select, input[type="date"], input[type="text"], input[type="search"], textarea { background: var(--surface-2); border: 1px solid var(--line-2); border-radius: 10px; padding: 8px 11px; min-width: 0; max-width: 100%; }
+select option { background: var(--surface-solid); color: var(--ink); }
+input::placeholder, textarea::placeholder { color: var(--muted); }
+textarea { resize: vertical; }
+.seg { display: inline-flex; flex-wrap: wrap; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 3px; }
+.seg button { border: 0; background: transparent; padding: 6px 12px; border-radius: 9px; cursor: pointer; font-weight: 500; color: var(--ink-2); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; box-shadow: 0 0 14px var(--glow-acc); }
+.btn { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line-2); background: var(--surface-2); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-weight: 500; text-decoration: none; }
+.btn svg { width: 16px; height: 16px; }
+.btn:hover { border-color: var(--accent); }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; color: #fff; font-weight: 600; box-shadow: 0 6px 22px var(--glow-acc); }
+.btn.primary:disabled { box-shadow: none; }
+.btn.danger { color: var(--crit); }
+.btn.sm { padding: 4px 10px; font-size: 12.5px; }
+.icon-btn { border: 0; background: none; cursor: pointer; color: var(--muted); padding: 4px 6px; border-radius: 6px; font-size: 13px; }
+.icon-btn:hover { color: var(--ink); background: var(--surface-3); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line-2); background: var(--surface-2); border-radius: 10px; padding: 6px 12px; cursor: pointer; font-weight: 500; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); box-shadow: 0 0 14px var(--glow-acc); }
+
+/* KPIs */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; min-width: 0; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: var(--shadow); }
+.kpi .v { font-family: var(--font-display); font-weight: 600; font-size: 30px; line-height: 1.05; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.kpi .v small { font-size: 14px; font-weight: 500; color: var(--muted); margin-left: 3px; }
+.kpi .d { font-size: 12px; color: var(--muted); }
+.kpi.or .v { color: var(--orange); text-shadow: 0 0 18px var(--glow-or); }
+.kpi.ok .v { color: var(--good-ink); }
+.bullet { position: relative; height: 8px; background: var(--surface-3); border-radius: 99px; margin-top: 4px; overflow: hidden; }
+.bullet .fill { position: absolute; inset: 0 auto 0 0; border-radius: 99px; background: var(--good); box-shadow: 0 0 12px color-mix(in srgb, var(--good) 60%, transparent); }
+
+/* Barras por piso */
+.hbars { display: grid; gap: 8px; }
+.hbar { display: grid; grid-template-columns: minmax(70px, 28%) 1fr auto; gap: 10px; align-items: center; font-size: 13px; }
+.hbar .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hbar .track { height: 8px; background: var(--surface-3); border-radius: 99px; overflow: hidden; display: flex; }
+.hbar .track span { height: 100%; }
+.hbar .val { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 64px; text-align: right; font-size: 12.5px; }
+.s-pend { background: linear-gradient(90deg, color-mix(in srgb, var(--orange) 70%, transparent), var(--orange)); box-shadow: 0 0 10px var(--glow-or); }
+.s-ok { background: color-mix(in srgb, var(--good) 75%, transparent); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--ink-2); margin-bottom: 10px; }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+
+/* Detalles */
+.det-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+.det { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+.det .ph { position: relative; aspect-ratio: 4 / 3; background: var(--surface-2); border: 0; padding: 0; cursor: zoom-in; display: block; width: 100%; }
+.det .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.det .ph .nro { position: absolute; left: 10px; top: 10px; font-family: var(--font-mono); font-size: 11px; background: rgba(4, 7, 13, .7); color: #fff; border-radius: 7px; padding: 2px 7px; }
+.det .ph .est { position: absolute; right: 10px; top: 10px; }
+.det .bd { padding: 12px 14px 14px; display: grid; gap: 8px; flex: 1; }
+.det .meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.det p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.det .ft { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-top: auto; flex-wrap: wrap; }
+.falta { display: grid; place-items: center; height: 100%; padding: 10px; text-align: center; color: var(--muted); font-size: 12px; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 99px; background: var(--surface-3); color: var(--ink-2); white-space: nowrap; }
+.pill.piso { background: var(--accent-soft); color: var(--ink); }
+.pill.pend { background: color-mix(in srgb, var(--orange) 85%, #000 0%); color: #fff; box-shadow: 0 0 12px var(--glow-or); }
+.pill.ok { background: var(--good); color: #04130a; }
+.list { display: grid; }
+.list-row { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
+.list-row:first-child { border-top: 0; }
+.list-row .th { width: 56px; height: 42px; border-radius: 8px; overflow: hidden; background: var(--surface-2); }
+.list-row .th img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.list-row .nm { min-width: 0; }
+.list-row .nm b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-row .nm span { display: block; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Registrar */
+.reg-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.form { display: grid; gap: 14px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field select, .field input, .field textarea { width: 100%; }
+.drop { position: relative; display: grid; place-items: center; align-content: center; gap: 8px; min-height: 220px; border: 1.5px dashed var(--line-2); border-radius: 14px; background: var(--surface-2); cursor: pointer; text-align: center; padding: 18px; color: var(--ink-2); overflow: hidden; }
+.drop:hover, .drop.over { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.drop svg { width: 34px; height: 34px; color: var(--accent); filter: drop-shadow(0 0 8px var(--glow-acc)); }
+.drop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+.drop .cambiar { position: absolute; right: 10px; bottom: 10px; z-index: 1; }
+.empty { padding: 26px 16px; text-align: center; color: var(--muted); border: 1px dashed var(--line-2); border-radius: 12px; }
+.empty b { color: var(--ink); display: block; margin-bottom: 4px; font-size: 15px; }
+.banner { padding: 12px 14px; border-radius: 12px; background: var(--warn-bg); color: var(--warn-ink); font-size: 13px; border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); }
+.banner.info { background: var(--accent-soft); color: var(--ink-2); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.confirm { display: inline-flex; gap: 4px; align-items: center; font-size: 12px; flex-wrap: wrap; }
+.two { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.cfg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.info-list { display: grid; gap: 10px; margin: 0; }
+.info-list div { display: grid; gap: 2px; }
+.info-list dt { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.info-list dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+#toast { position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--tip-bg); color: var(--tip-ink); padding: 10px 16px; border-radius: 12px; font-weight: 500; z-index: 60; box-shadow: 0 8px 24px rgb(0 0 0 / .3); max-width: calc(100% - 32px); }
+dialog#visor { border: 0; padding: 0; background: transparent; max-width: min(96vw, 1200px); max-height: 94dvh; }
+dialog#visor::backdrop { background: rgba(2, 5, 10, .82); backdrop-filter: blur(6px); }
+dialog#visor img { display: block; max-width: 100%; max-height: 82dvh; border-radius: 12px; margin: 0 auto; }
+dialog#visor .cap { color: #e8eef8; padding: 10px 4px 0; font-size: 13px; display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+dialog#visor .cap button { flex: none; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.08); color: #fff; border-radius: 9px; padding: 5px 12px; cursor: pointer; }
+
+@media (max-width: 1180px) {
+  .app { grid-template-columns: 76px minmax(0, 1fr); }
+  .side { padding: 16px 10px; }
+  .side .logo, .side-act, .nav button span, .side-foot .theme-btn span { display: none; }
+  .nav button, .side-foot .theme-btn { justify-content: center; padding: 11px; }
+  .topbar .t-logo.logo-b { display: var(--logo-blanco); }
+  .topbar .t-logo.logo-a { display: var(--logo-azul); }
+}
+@media (max-width: 980px) {
+  .reg-grid, .two { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side { position: fixed; inset: auto 0 0 0; top: auto; height: auto; margin: 0; border-radius: 18px 18px 0 0; flex-direction: row; padding: 6px max(10px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px)); z-index: 40; background: color-mix(in srgb, var(--surface-solid) 88%, transparent); }
+  .side-foot { display: none; }
+  .nav { flex-direction: row; justify-content: space-around; width: 100%; gap: 2px; }
+  .nav button { flex-direction: column; gap: 3px; padding: 7px 0; font-size: 10.5px; flex: 1; min-width: 0; }
+  .nav button span { display: block; }
+  .content { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+  .topbar .theme-btn { display: inline-flex; }
+  .topbar .theme-btn span { display: none; }
+  .topbar h1 { font-size: 22px; }
+  .topbar .t-left { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .topbar .t-logo { height: 50px; }
+  .topbar .t-right { width: 100%; }
+  .topbar .pill-glass { flex: 1; }
+  .topbar .pill-glass select { max-width: none; width: 100%; }
+  #toast { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (max-width: 520px) {
+  .row2 { grid-template-columns: minmax(0, 1fr); }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi .v { font-size: 26px; }
+  .filters .f { flex: 1 1 140px; }
+  .filters .f select, .filters .f input { width: 100%; }
+  .det-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .card, .kpi { animation: rise .35s ease-out both; }
+  @keyframes rise { from { transform: translateY(6px); } to { transform: none; } }
+}
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="logo"><img class="logo-b" src="marca/logo-blanco.png" alt="Arquitectura & Concreto" width="509" height="262"><img class="logo-a" src="marca/logo-azul.png" alt="Arquitectura & Concreto" width="560" height="288"></div>
+    <nav class="nav" id="nav" aria-label="Secciones"></nav>
+    <div class="side-foot">
+      <button class="theme-btn" data-act-theme type="button"></button>
+      <div class="side-act" id="side-act"></div>
+    </div>
+  </aside>
+  <div class="content">
+    <header class="topbar">
+      <div class="t-left">
+        <img class="t-logo logo-b" src="marca/logo-blanco.png" alt="Arquitectura & Concreto" width="509" height="262">
+        <img class="t-logo logo-a" src="marca/logo-azul.png" alt="Arquitectura & Concreto" width="560" height="288">
+        <div><div class="eyebrow" id="t-eyebrow">Revisión de actividades</div><h1 id="t-title">Reporte</h1></div>
+      </div>
+      <div class="t-right">
+        <label class="pill-glass" for="act-sel"><span class="live" aria-hidden="true"></span><select id="act-sel" aria-label="Actividad"><option>Cargando…</option></select></label>
+        <button class="theme-btn" data-act-theme type="button"></button>
+      </div>
+    </header>
+    <main id="main">
+      <div class="empty"><b>Cargando…</b>Conectando con la base de datos.</div>
+    </main>
+  </div>
+</div>
+
+<dialog id="visor"><img alt=""><div class="cap"><span></span><button type="button" data-cerrar>Cerrar</button></div></dialog>
+<div id="toast" hidden></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- utilidades ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const toISO = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fromISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const fmtD = s => { if (!s) return ''; const d = fromISO(s); return `${d.getDate()} ${MES[d.getMonth()]} ${d.getFullYear()}`; };
+const today = toISO(new Date());
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const cmpTexto = new Intl.Collator('es', { numeric: true, sensitivity: 'base' }).compare;
+const ls = { get(k) { try { return localStorage.getItem('sact.' + k); } catch { return null; } }, set(k, v) { try { localStorage.setItem('sact.' + k, v); } catch {} } };
+const opts = (list, sel, ph) => (ph != null ? `<option value="">${esc(ph)}</option>` : '') + list.map(o => { const v = typeof o === 'object' ? o.v : o; const l = typeof o === 'object' ? o.l : o; return `<option value="${esc(v)}"${v === sel ? ' selected' : ''}>${esc(l)}</option>`; }).join('');
+const slug = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'actividad';
+// "1-12, Cubierta" -> ["1", …, "12", "Cubierta"]
+const expandirLista = txt => String(txt || '').split(/[,;\n]/).map(s => s.trim()).filter(Boolean).flatMap(s => {
+  const m = s.match(/^(-?\d+)\s*(?:-|a|al)\s*(-?\d+)$/i);
+  if (!m) return [s];
+  const a = +m[1], b = +m[2], out = []; if (Math.abs(b - a) > 200) return [s];
+  for (let i = a; a <= b ? i <= b : i >= b; i += a <= b ? 1 : -1) out.push(String(i));
+  return out;
+}).filter((v, i, arr) => arr.indexOf(v) === i);
+// Inverso: ["1", …, "12", "Cubierta"] -> "1-12, Cubierta"
+const compactarLista = list => {
+  const out = []; let i = 0;
+  while (i < list.length) {
+    let j = i;
+    if (/^-?\d+$/.test(list[i])) while (j + 1 < list.length && /^-?\d+$/.test(list[j + 1]) && +list[j + 1] === +list[j] + 1) j++;
+    out.push(j - i >= 2 ? `${list[i]}-${list[j]}` : list.slice(i, j + 1).join(', ')); i = j + 1;
+  }
+  return out.join(', ');
+};
+const pisoTxt = p => /^-?\d+$/.test(String(p)) ? 'Piso ' + p : String(p || '—');
+
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
+function errMsg(e) {
+  if (e?.code === 'quota_exceeded') return 'Se llegó al límite de almacenamiento. Borra detalles antiguos.';
+  if (e?.code === 'invalid_argument' || e?.code === 'permission_denied' || e?.code === 'not_granted') return 'No tienes permiso para guardar en esta app.';
+  return 'No se pudo guardar: ' + (e?.message || 'error de conexión') + '. Intenta de nuevo.';
+}
+
+/* ---------- íconos y secciones ---------- */
+const svgI = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICON = {
+  reporte: svgI('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 17v-3M12 17v-6M15 17v-4"/>'),
+  registrar: svgI('<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/>'),
+  ajustes: svgI('<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>'),
+  sun: svgI('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/>'),
+  moon: svgI('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'),
+  pdf: svgI('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'),
+  check: svgI('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+  plus: svgI('<path d="M12 5v14M5 12h14"/>'),
+};
+const TABS = [['reporte', 'Reporte'], ['registrar', 'Registrar'], ['ajustes', 'Ajustes']];
+const TITLES = { reporte: 'Reporte de detalles', registrar: 'Registrar detalle', ajustes: 'Información de la actividad' };
+
+function temaActual() {
+  const c = document.documentElement.classList;
+  if (c.contains('tema-claro')) return 'claro';
+  if (c.contains('tema-oscuro')) return 'oscuro';
+  return getComputedStyle(document.documentElement).colorScheme.includes('light') ? 'claro' : 'oscuro';
+}
+function pintarTemaBtn() {
+  const t = temaActual();
+  document.querySelectorAll('[data-act-theme]').forEach(b => { b.innerHTML = t === 'oscuro' ? ICON.sun + '<span>Modo claro</span>' : ICON.moon + '<span>Modo oscuro</span>'; b.setAttribute('aria-label', t === 'oscuro' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'); });
+}
+function aplicarTema(t) {
+  const c = document.documentElement.classList; c.remove('tema-claro', 'tema-oscuro');
+  if (t) c.add('tema-' + t);
+  ls.set('tema', t || ''); pintarTemaBtn();
+}
+
+/* ---------- estado ---------- */
+const ESTADOS = ['En ejecución', 'En revisión', 'Entregada'];
+const nuevoForm = () => ({ editId: null, fecha: today, piso: ls.get('piso') || '', ubicacion: '', descripcion: '', foto: null, fotoGuardada: null });
+const S = {
+  db: null, assets: null, dl: null, offline: false, loaded: false,
+  acts: [], actId: null, act: null, detalles: [], detLoaded: false, unsub: null,
+  tab: TABS.some(t => t[0] === ls.get('tab')) ? ls.get('tab') : 'reporte', busy: false,
+  fotoUrl: {},
+  form: nuevoForm(),
+  filt: { piso: '', ubicacion: '', estado: '', desde: '', hasta: '', q: '' },
+  confirm: null,
+  cfg: { draft: null, dirty: false, nueva: false, confirmBorrar: false },
+};
+async function run(fn, okMsg) {
+  if (S.busy) return false; S.busy = true;
+  try { await fn(); if (okMsg) toast(okMsg); return true; }
+  catch (e) { if (e?.code === 'declined') return false; console.warn(e); toast(errMsg(e)); return false; }
+  finally { S.busy = false; }
+}
+
+/* ---------- datos ---------- */
+// actividades/<id>                    información de la actividad (Ajustes)
+// actividades/<id>/detalles/<detId>   { fecha, piso, ubicacion, descripcion, foto: {asset | data, w, h}, estado, creado, editado }
+async function boot() {
+  bindShell(); render();
+  try { S.db = window.claude?.use ? await window.claude.use('db') : null; } catch { S.db = null; }
+  try { S.assets = window.claude?.use ? await window.claude.use('assets') : null; } catch { S.assets = null; }
+  try { S.dl = window.claude?.use ? await window.claude.use('downloads') : null; } catch { S.dl = null; }
+  if (!S.db) { S.offline = true; S.loaded = true; render(); return; }
+  S.db.collection('actividades').onSnapshot(snap => {
+    S.acts = snap.docs.map(d => ({ ...d.data(), id: d.id })).sort((a, b) => cmpTexto(a.nombre || '', b.nombre || ''));
+    S.loaded = true;
+    let want = S.actId || ls.get('act');
+    if (!S.acts.find(a => a.id === want)) want = S.acts[0]?.id || null;
+    if (want !== S.actId) selectAct(want);
+    else { S.act = S.acts.find(a => a.id === want) || null; onData(); }
+  }, e => { console.warn(e); S.offline = true; S.loaded = true; render(); });
+}
+function selectAct(id) {
+  if (S.unsub) { S.unsub(); S.unsub = null; }
+  Object.assign(S, { actId: id, act: S.acts.find(a => a.id === id) || null, detalles: [], detLoaded: false, confirm: null });
+  S.cfg = { draft: null, dirty: false, nueva: false, confirmBorrar: false };
+  S.filt = { piso: '', ubicacion: '', estado: '', desde: '', hasta: '', q: '' };
+  limpiarForm();
+  if (id) ls.set('act', id);
+  if (!id) { onData(); return; }
+  S.unsub = S.db.collection(`actividades/${id}/detalles`).onSnapshot(snap => {
+    S.detalles = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    S.detLoaded = true; onData();
+  }, e => console.warn(e));
+  onData();
+}
+function onData() {
+  renderHeader();
+  if (S.tab === 'ajustes' && S.cfg.dirty) return;
+  if (S.tab === 'registrar' && $('#reg-form')) { renderRecientes(); return; }
+  render();
+}
+const pisosAct = () => S.act?.pisos || [];
+const ubicAct = () => S.act?.ubicaciones || [];
+const ordenPiso = p => { const i = pisosAct().indexOf(String(p)); return i < 0 ? 1e6 : i; };
+const ordenar = list => list.slice().sort((a, b) => ordenPiso(a.piso) - ordenPiso(b.piso) || cmpTexto(String(a.piso), String(b.piso)) || cmpTexto(a.ubicacion || '', b.ubicacion || '') || (a.creado < b.creado ? -1 : 1));
+const fotoSrc = f => !f ? '' : f.data || S.fotoUrl[f.asset] || '/_blob/' + f.asset;
+const imgFoto = (f, alt) => f ? `<img src="${esc(fotoSrc(f))}" alt="${esc(alt)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'falta',textContent:'No se pudo cargar la foto'}))">` : `<div class="falta">Sin foto</div>`;
+// Numeración estable: orden de registro.
+const numeros = () => { const m = {}; S.detalles.slice().sort((a, b) => a.creado < b.creado ? -1 : 1).forEach((d, i) => m[d.id] = i + 1); return m; };
+
+// Reduce la foto del celular (varios MB) a JPEG. Con almacenamiento de archivos 1600 px; si va dentro del documento, 1100 px.
+async function reducirFoto(file, max, calidad) {
+  const src = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ko(new Error('imagen')); i.src = src; });
+    const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight)), w = Math.round(img.naturalWidth * k), h = Math.round(img.naturalHeight * k);
+    const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h);
+    const blob = await new Promise(ok => c.toBlob(ok, 'image/jpeg', calidad));
+    if (!blob) throw new Error('imagen');
+    return { blob, w, h, url: URL.createObjectURL(blob) };
+  } finally { URL.revokeObjectURL(src); }
+}
+const blobData = b => new Promise((ok, ko) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.onerror = () => ko(fr.error); fr.readAsDataURL(b); });
+async function subirFoto(n) {
+  if (S.assets) { const up = await S.assets.upload(n.blob); S.fotoUrl[up.id] = up.url; return { asset: up.id, w: n.w, h: n.h }; }
+  return { data: await blobData(n.blob), w: n.w, h: n.h };
+}
+const borrarAsset = f => { if (f?.asset && S.assets) return S.assets.delete(f.asset).catch(e => console.warn(e)); };
+
+/* ---------- shell y render ---------- */
+function bindShell() {
+  $('#nav').innerHTML = TABS.map(([k, l]) => `<button type="button" data-tab="${k}" title="${l}">${ICON[k]}<span>${l}</span></button>`).join('');
+  $('#nav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) irA(b.dataset.tab); });
+  document.querySelectorAll('[data-act-theme]').forEach(b => b.addEventListener('click', () => aplicarTema(temaActual() === 'oscuro' ? 'claro' : 'oscuro')));
+  const t = ls.get('tema'); aplicarTema(t === 'claro' || t === 'oscuro' ? t : '');
+  matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', pintarTemaBtn);
+  new MutationObserver(pintarTemaBtn).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  $('#act-sel').addEventListener('change', e => {
+    if (e.target.value === '__nueva__') { e.target.value = S.actId || ''; nuevaActividad(); return; }
+    if (e.target.value) selectAct(e.target.value);
+  });
+  const main = $('#main');
+  main.addEventListener('click', onClick);
+  main.addEventListener('change', onChange);
+  main.addEventListener('input', onInput);
+  main.addEventListener('dragover', e => { const d = e.target.closest('.drop'); if (d) { e.preventDefault(); d.classList.add('over'); } });
+  main.addEventListener('dragleave', e => e.target.closest('.drop')?.classList.remove('over'));
+  main.addEventListener('drop', e => { const d = e.target.closest('.drop'); if (!d) return; e.preventDefault(); d.classList.remove('over'); if (e.dataTransfer.files[0]) tomarFoto(e.dataTransfer.files[0]); });
+  const v = $('#visor');
+  v.addEventListener('click', e => { if (e.target === v || e.target.closest('[data-cerrar]')) v.close(); });
+}
+function irA(tab) { S.tab = tab; ls.set('tab', tab); render(); scrollTo({ top: 0 }); }
+function nuevaActividad() { S.cfg = { draft: borradorCfg(null), dirty: true, nueva: true, confirmBorrar: false }; S.tab = 'ajustes'; ls.set('tab', 'ajustes'); render(); scrollTo({ top: 0 }); }
+function renderHeader() {
+  document.querySelectorAll('#nav [data-tab]').forEach(t => t.setAttribute('aria-current', t.dataset.tab === S.tab ? 'page' : 'false'));
+  const sel = $('#act-sel');
+  sel.innerHTML = S.acts.length
+    ? opts(S.acts.map(a => ({ v: a.id, l: a.nombre + (a.torre ? ' · ' + a.torre : '') })), S.actId) + '<option value="__nueva__">+ Nueva actividad…</option>'
+    : `<option value="">${S.loaded ? 'Sin actividades' : 'Cargando…'}</option>`;
+  sel.disabled = !S.acts.length;
+  $('#t-title').textContent = TITLES[S.tab] || '';
+  $('#t-eyebrow').textContent = S.act ? [S.act.obra, S.act.nombre].filter(Boolean).join(' · ') : 'Revisión de actividades';
+  const pend = S.detalles.filter(d => d.estado !== 'corregido').length;
+  $('#side-act').innerHTML = S.act ? `<b>${esc(S.act.nombre)}</b>${S.detalles.length} detalles · ${pend} pendientes` : '';
+}
+function render() {
+  renderHeader();
+  const main = $('#main');
+  if (S.offline) { main.innerHTML = `<div class="empty"><b>Sin conexión a la base de datos</b>Abre esta página desde claude.ai con tu cuenta para ver y guardar los detalles.</div>`; return; }
+  if (!S.loaded) return;
+  if (!S.act && S.tab !== 'ajustes') {
+    main.innerHTML = `<div class="empty"><b>Aún no hay actividades</b>Primero registra la actividad que se está ejecutando y revisando.<div style="margin-top:12px"><button class="btn primary" data-act="nueva-act">${ICON.plus}Crear actividad</button></div></div>`; return;
+  }
+  ({ reporte: renderReporte, registrar: renderRegistrar, ajustes: renderAjustes }[S.tab] || renderReporte)();
+}
+
+/* ---------- pestaña: Reporte ---------- */
+function filtrados() {
+  const f = S.filt, q = f.q.trim().toLowerCase();
+  return ordenar(S.detalles.filter(d =>
+    (!f.piso || String(d.piso) === f.piso) &&
+    (!f.ubicacion || d.ubicacion === f.ubicacion) &&
+    (!f.estado || (f.estado === 'corregido' ? d.estado === 'corregido' : d.estado !== 'corregido')) &&
+    (!f.desde || d.fecha >= f.desde) && (!f.hasta || d.fecha <= f.hasta) &&
+    (!q || [d.descripcion, d.ubicacion, pisoTxt(d.piso)].join(' ').toLowerCase().includes(q))));
+}
+const valoresUsados = (k, base) => [...new Set([...base, ...S.detalles.map(d => String(d[k] ?? '')).filter(Boolean)])];
+function filtrosTxt() {
+  const f = S.filt, p = [];
+  if (f.piso) p.push(pisoTxt(f.piso));
+  if (f.ubicacion) p.push('Ubicación: ' + f.ubicacion);
+  if (f.estado) p.push(f.estado === 'corregido' ? 'Solo corregidos' : 'Solo pendientes');
+  if (f.desde || f.hasta) p.push(`Fechas: ${f.desde ? fmtD(f.desde) : 'inicio'} – ${f.hasta ? fmtD(f.hasta) : 'hoy'}`);
+  if (f.q.trim()) p.push(`Texto: "${f.q.trim()}"`);
+  return p.length ? p.join(' · ') : 'Todos los detalles';
+}
+function renderReporte() {
+  const f = S.filt, lista = filtrados(), nros = numeros();
+  const pend = lista.filter(d => d.estado !== 'corregido').length, corr = lista.length - pend;
+  const pisosUsados = valoresUsados('piso', pisosAct()).sort((a, b) => ordenPiso(a) - ordenPiso(b) || cmpTexto(a, b));
+  const ubic = valoresUsados('ubicacion', ubicAct()).sort(cmpTexto);
+  const porPiso = new Map();
+  for (const d of lista) { const k = String(d.piso); const x = porPiso.get(k) || { p: 0, c: 0 }; d.estado === 'corregido' ? x.c++ : x.p++; porPiso.set(k, x); }
+  const maxP = Math.max(1, ...[...porPiso.values()].map(x => x.p + x.c));
+  const hayFiltro = f.piso || f.ubicacion || f.estado || f.desde || f.hasta || f.q.trim();
+  $('#main').innerHTML = `
+  <div class="grid">
+    <section class="card">
+      <div class="toolbar" style="margin-bottom:14px">
+        <h2 style="margin:0">Filtros <small>el reporte y el PDF salen con lo filtrado</small></h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${hayFiltro ? `<button class="btn sm" data-act="filt-limpiar">Quitar filtros</button>` : ''}
+          <button class="btn primary" id="btn-pdf" data-act="pdf" ${lista.length ? '' : 'disabled'}>${ICON.pdf}Descargar reporte PDF</button>
+        </div>
+      </div>
+      <div class="filters">
+        <label class="f"><span>Piso</span><select data-filt="piso">${opts(pisosUsados.map(p => ({ v: p, l: pisoTxt(p) })), f.piso, 'Todos')}</select></label>
+        <label class="f"><span>Ubicación</span><select data-filt="ubicacion">${opts(ubic, f.ubicacion, 'Todas')}</select></label>
+        <div class="f"><span>Estado</span><div class="seg">${[['', 'Todos'], ['pendiente', 'Pendientes'], ['corregido', 'Corregidos']].map(([v, l]) => `<button type="button" data-act="filt-estado" data-v="${v}" aria-pressed="${f.estado === v}">${l}</button>`).join('')}</div></div>
+        <label class="f"><span>Desde</span><input type="date" data-filt="desde" value="${esc(f.desde)}"></label>
+        <label class="f"><span>Hasta</span><input type="date" data-filt="hasta" value="${esc(f.hasta)}"></label>
+        <label class="f" style="flex:1 1 180px"><span>Buscar</span><input type="search" data-filt="q" value="${esc(f.q)}" placeholder="Descripción o ubicación…"></label>
+      </div>
+    </section>
+    <div class="kpis">
+      <div class="kpi"><span class="eyebrow">Detalles</span><span class="v">${lista.length}</span><span class="d">${hayFiltro ? `de ${S.detalles.length} registrados` : 'registrados en la actividad'}</span></div>
+      <div class="kpi or"><span class="eyebrow">Pendientes</span><span class="v">${pend}</span><span class="d">por corregir</span></div>
+      <div class="kpi ok"><span class="eyebrow">Corregidos</span><span class="v">${corr}</span><span class="d">cerrados en revisión</span></div>
+      <div class="kpi"><span class="eyebrow">Cierre</span><span class="v">${lista.length ? Math.round(corr / lista.length * 100) : 0}<small>%</small></span><div class="bullet"><span class="fill" style="width:${lista.length ? corr / lista.length * 100 : 0}%"></span></div></div>
+    </div>
+    ${lista.length ? `<section class="card">
+      <h3>Detalles por piso</h3>
+      <div class="legend"><span><i style="background:var(--orange)"></i>Pendientes</span><span><i style="background:var(--good)"></i>Corregidos</span></div>
+      <div class="hbars">${[...porPiso.entries()].sort((a, b) => ordenPiso(a[0]) - ordenPiso(b[0]) || cmpTexto(a[0], b[0])).map(([p, x]) => `
+        <div class="hbar"><span class="name">${esc(pisoTxt(p))}</span><span class="track" style="width:${(x.p + x.c) / maxP * 100}%"><span class="s-pend" style="flex:${x.p}"></span><span class="s-ok" style="flex:${x.c}"></span></span><span class="val">${x.p} / ${x.p + x.c}</span></div>`).join('')}</div>
+    </section>` : ''}
+    <div class="toolbar" style="margin-top:4px"><h3 style="margin:0;font-family:var(--font-display);font-weight:600">Registro fotográfico <small>${esc(filtrosTxt())}</small></h3></div>
+    ${!S.detLoaded ? `<div class="empty"><b>Cargando detalles…</b></div>` : !S.detalles.length
+      ? `<div class="empty"><b>Aún no hay detalles</b>Registra el primero con su foto.<div style="margin-top:12px"><button class="btn primary" data-act="goto" data-v="registrar">${ICON.plus}Registrar detalle</button></div></div>`
+      : !lista.length ? `<div class="empty"><b>Ningún detalle cumple los filtros</b>Cambia o quita los filtros.</div>`
+      : `<div class="det-grid">${lista.map(d => tarjeta(d, nros[d.id])).join('')}</div>`}
+  </div>`;
+}
+function tarjeta(d, n) {
+  const ok = d.estado === 'corregido';
+  return `<article class="card det">
+    <button type="button" class="ph" data-act="ver" data-v="${esc(d.id)}" aria-label="Ver foto del detalle ${n}">${imgFoto(d.foto, 'Detalle ' + n)}<span class="nro">#${n}</span><span class="est pill ${ok ? 'ok' : 'pend'}">${ok ? 'Corregido' : 'Pendiente'}</span></button>
+    <div class="bd">
+      <div class="meta"><span class="pill piso">${esc(pisoTxt(d.piso))}</span>${d.ubicacion ? `<span class="pill">${esc(d.ubicacion)}</span>` : ''}</div>
+      <p>${esc(d.descripcion)}</p>
+      <div class="ft">
+        <span class="hint">${esc(fmtD(d.fecha))}${ok && d.corregido ? ' · corregido ' + esc(fmtD(d.corregido)) : ''}</span>
+        ${S.confirm === d.id ? `<span class="confirm">¿Borrar? <button class="btn sm danger" data-act="borrar-ok" data-v="${esc(d.id)}">Borrar</button><button class="btn sm" data-act="borrar-no">No</button></span>` : `<span style="display:flex;gap:4px;align-items:center">
+          <button class="btn sm" data-act="estado" data-v="${esc(d.id)}">${ok ? 'Reabrir' : ICON.check + 'Corregido'}</button>
+          <button class="icon-btn" data-act="editar" data-v="${esc(d.id)}">Editar</button>
+          <button class="icon-btn" data-act="borrar" data-v="${esc(d.id)}" aria-label="Borrar detalle">✕</button></span>`}
+      </div>
+    </div>
+  </article>`;
+}
+function verFoto(d) {
+  if (!d?.foto) return;
+  const v = $('#visor'); $('img', v).src = fotoSrc(d.foto); $('img', v).alt = d.descripcion || '';
+  $('.cap span', v).textContent = `#${numeros()[d.id]} · ${pisoTxt(d.piso)}${d.ubicacion ? ' · ' + d.ubicacion : ''} — ${d.descripcion || ''}`;
+  v.showModal();
+}
+
+/* ---------- pestaña: Registrar ---------- */
+function limpiarForm() { if (S.form.foto) URL.revokeObjectURL(S.form.foto.url); const piso = S.form.piso; S.form = nuevoForm(); if (piso) S.form.piso = piso; }
+function editar(d) {
+  limpiarForm();
+  Object.assign(S.form, { editId: d.id, fecha: d.fecha || today, piso: String(d.piso ?? ''), ubicacion: d.ubicacion || '', descripcion: d.descripcion || '', fotoGuardada: d.foto || null });
+  irA('registrar');
+}
+async function tomarFoto(file) {
+  if (!/^image\//.test(file.type) && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) { toast('Elige un archivo de imagen (JPG o PNG).'); return; }
+  try {
+    const n = S.assets ? await reducirFoto(file, 1600, .82) : await reducirFoto(file, 1100, .72);
+    if (S.form.foto) URL.revokeObjectURL(S.form.foto.url);
+    S.form.foto = n; pintarDrop(); validarForm();
+  } catch { toast('No se pudo leer la foto. Si es HEIC, compártela como JPG.'); }
+}
+function pintarDrop() {
+  const F = S.form, d = $('#drop'); if (!d) return;
+  const src = F.foto?.url || (F.fotoGuardada ? fotoSrc(F.fotoGuardada) : '');
+  d.innerHTML = src ? `<img src="${esc(src)}" alt="Foto del detalle"><span class="btn sm cambiar">Cambiar foto</span>`
+    : `${ICON.registrar}<b>Tomar o elegir foto</b><span class="hint">En el celular abre la cámara. En el computador puedes arrastrar la imagen aquí.</span>`;
+}
+const formValido = () => { const F = S.form; return F.piso.trim() && F.descripcion.trim() && (F.foto || F.fotoGuardada); };
+function validarForm() {
+  const b = $('#btn-guardar'); if (b) b.disabled = !formValido();
+  const h = $('#form-falta'); if (!h) return;
+  const F = S.form, falta = [!F.piso.trim() && 'piso', !F.descripcion.trim() && 'descripción', !(F.foto || F.fotoGuardada) && 'foto'].filter(Boolean);
+  h.textContent = falta.length ? 'Falta: ' + falta.join(', ') + '.' : '';
+}
+function renderRegistrar() {
+  const F = S.form, ed = F.editId && S.detalles.find(d => d.id === F.editId);
+  const pisos = pisosAct();
+  $('#main').innerHTML = `
+  <div class="reg-grid">
+    <section class="card form" id="reg-form">
+      <div class="toolbar"><div><div class="eyebrow">${esc(S.act.nombre)}</div><h2 style="margin:4px 0 0">${ed ? `Editar detalle #${numeros()[ed.id]}` : 'Nuevo detalle'}</h2></div>
+        ${ed ? `<button class="btn sm" data-act="cancelar-edicion">Cancelar edición</button>` : ''}</div>
+      <label class="drop" id="drop" for="foto-file"></label>
+      <input type="file" id="foto-file" accept="image/*" hidden>
+      <div class="row2">
+        <div class="field"><label for="f-piso">Piso</label>
+          ${pisos.length ? `<select id="f-piso" data-form="piso">${opts(pisos.includes(F.piso) || !F.piso ? pisos.map(p => ({ v: p, l: pisoTxt(p) })) : [...pisos.map(p => ({ v: p, l: pisoTxt(p) })), { v: F.piso, l: pisoTxt(F.piso) }], F.piso, 'Elige el piso')}</select>`
+            : `<input type="text" id="f-piso" data-form="piso" value="${esc(F.piso)}" placeholder="Ej.: 7">`}</div>
+        <div class="field"><label for="f-ubic">Ubicación</label>
+          <input type="text" id="f-ubic" data-form="ubicacion" list="dl-ubic" value="${esc(F.ubicacion)}" placeholder="Ej.: Apto 702, baño social" autocomplete="off">
+          <datalist id="dl-ubic">${valoresUsados('ubicacion', ubicAct()).sort(cmpTexto).map(u => `<option value="${esc(u)}">`).join('')}</datalist></div>
+      </div>
+      ${ubicAct().length ? `<div class="chips" aria-label="Ubicaciones frecuentes">${ubicAct().map(u => `<button type="button" class="chip" data-act="ubic-chip" data-v="${esc(u)}" aria-pressed="${F.ubicacion === u}">${esc(u)}</button>`).join('')}</div>` : ''}
+      <div class="field"><label for="f-desc">Descripción del detalle</label><textarea id="f-desc" data-form="descripcion" rows="3" placeholder="Qué quedó pendiente y qué hay que corregir…">${esc(F.descripcion)}</textarea></div>
+      <div class="row2">
+        <div class="field"><label for="f-fecha">Fecha de revisión</label><input type="date" id="f-fecha" data-form="fecha" value="${esc(F.fecha)}" max="${today}"></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button type="button" class="btn primary" id="btn-guardar" data-act="guardar">${ed ? 'Guardar cambios' : 'Guardar detalle'}</button>
+        <span class="hint" id="form-falta"></span>
+      </div>
+    </section>
+    <section class="card"><h3>Últimos registrados <small id="rec-n"></small></h3><div id="recientes"></div></section>
+  </div>`;
+  pintarDrop(); validarForm(); renderRecientes();
+}
+function renderRecientes() {
+  const box = $('#recientes'); if (!box) return;
+  const nros = numeros(), rec = S.detalles.slice().sort((a, b) => a.creado < b.creado ? 1 : -1).slice(0, 8);
+  $('#rec-n').textContent = S.detalles.length ? `${S.detalles.length} en total` : '';
+  box.innerHTML = rec.length ? `<div class="list">${rec.map(d => `<div class="list-row">
+      <div class="th">${imgFoto(d.foto, '')}</div>
+      <div class="nm"><b>#${nros[d.id]} · ${esc(pisoTxt(d.piso))}${d.ubicacion ? ' · ' + esc(d.ubicacion) : ''}</b><span>${esc(d.descripcion)}</span></div>
+      <button class="icon-btn" data-act="editar" data-v="${esc(d.id)}">Editar</button></div>`).join('')}</div>
+      <div style="margin-top:12px"><button class="btn sm" data-act="goto" data-v="reporte">Ver reporte</button></div>`
+    : `<div class="empty"><b>Sin detalles todavía</b>Lo que registres aparece aquí.</div>`;
+}
+async function guardarDetalle() {
+  const F = S.form; if (!formValido()) { validarForm(); return; }
+  const prev = F.editId ? S.detalles.find(d => d.id === F.editId) : null;
+  const ok = await run(async () => {
+    const foto = F.foto ? await subirFoto(F.foto) : F.fotoGuardada;
+    const ahora = new Date().toISOString(), id = F.editId || uid();
+    const doc = { fecha: F.fecha || today, piso: F.piso.trim(), ubicacion: F.ubicacion.trim(), descripcion: F.descripcion.trim(), foto,
+      estado: prev?.estado || 'pendiente', creado: prev?.creado || ahora, editado: ahora };
+    if (prev?.corregido) doc.corregido = prev.corregido;
+    await S.db.doc(`actividades/${S.actId}/detalles/${id}`).set(doc);
+    // la foto reemplazada se borra del almacenamiento después de guardar el detalle
+    if (prev && F.foto && prev.foto?.asset) await borrarAsset(prev.foto);
+  }, prev ? 'Detalle actualizado' : 'Detalle guardado');
+  if (!ok) return;
+  ls.set('piso', F.piso.trim());
+  limpiarForm();
+  if (prev) irA('reporte'); else renderRegistrar();
+}
+
+/* ---------- pestaña: Ajustes ---------- */
+const CAMPOS = [
+  ['nombre', 'Actividad', 'Ej.: Estuco y pintura'],
+  ['obra', 'Obra / proyecto', 'Ej.: Ciudadela'],
+  ['torre', 'Torre o etapa', 'Ej.: Torre 4'],
+  ['contratista', 'Contratista', 'Quién ejecuta la actividad'],
+  ['responsable', 'Responsable de la revisión', 'Quién revisa'],
+  ['residente', 'Residente de obra', ''],
+];
+function borradorCfg(a) {
+  return { nombre: a?.nombre || '', obra: a?.obra || '', torre: a?.torre || '', contratista: a?.contratista || '', responsable: a?.responsable || '', residente: a?.residente || '',
+    inicio: a?.inicio || today, fin: a?.fin || '', estado: a?.estado || ESTADOS[0], alcance: a?.alcance || '',
+    pisos: compactarLista(a?.pisos || []), ubicaciones: (a?.ubicaciones || []).join(', ') };
+}
+function renderAjustes() {
+  const C = S.cfg;
+  if (!C.draft) C.draft = borradorCfg(C.nueva ? null : S.act);
+  const D = C.draft, nueva = C.nueva || !S.act;
+  const pisosPrev = expandirLista(D.pisos);
+  const pend = S.detalles.filter(d => d.estado !== 'corregido').length;
+  $('#main').innerHTML = `
+  <div class="two">
+    <section class="card form">
+      <div class="toolbar"><div><div class="eyebrow">${nueva ? 'Nueva actividad' : 'Actividad en revisión'}</div><h2 style="margin:4px 0 0">${nueva ? 'Crear actividad' : esc(S.act.nombre)}</h2></div>
+        ${!nueva ? `<button class="btn sm" data-act="nueva-act">${ICON.plus}Nueva actividad</button>` : ''}</div>
+      <div class="cfg-grid">
+        ${CAMPOS.map(([k, l, ph]) => `<div class="field"><label for="c-${k}">${l}</label><input type="text" id="c-${k}" data-cfg="${k}" value="${esc(D[k])}" placeholder="${esc(ph)}"></div>`).join('')}
+        <div class="field"><label for="c-inicio">Fecha de inicio</label><input type="date" id="c-inicio" data-cfg="inicio" value="${esc(D.inicio)}"></div>
+        <div class="field"><label for="c-fin">Entrega programada</label><input type="date" id="c-fin" data-cfg="fin" value="${esc(D.fin)}"></div>
+      </div>
+      <div class="field"><label>Estado de la actividad</label><div class="seg">${ESTADOS.map(e => `<button type="button" data-act="cfg-estado" data-v="${esc(e)}" aria-pressed="${D.estado === e}">${esc(e)}</button>`).join('')}</div></div>
+      <div class="field"><label for="c-alcance">Alcance y observaciones</label><textarea id="c-alcance" data-cfg="alcance" rows="3" placeholder="Qué incluye la actividad, especificaciones, criterios de recibo…">${esc(D.alcance)}</textarea></div>
+      <div class="field"><label for="c-pisos">Pisos <span class="hint" id="c-pisos-n">${pisosPrev.length ? pisosPrev.length + ' pisos' : ''}</span></label><input type="text" id="c-pisos" data-cfg="pisos" value="${esc(D.pisos)}" placeholder="Ej.: 1-12, Cubierta"><span class="hint">Rangos con guion y separados por coma. Aparecen como lista en Registrar.</span></div>
+      <div class="field"><label for="c-ubic">Ubicaciones frecuentes</label><input type="text" id="c-ubic" data-cfg="ubicaciones" value="${esc(D.ubicaciones)}" placeholder="Ej.: Apto 01, Apto 02, Hall, Escalera"><span class="hint">Separadas por coma. Salen como botones rápidos al registrar; también se puede escribir otra.</span></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn primary" data-act="cfg-guardar" ${D.nombre.trim() ? '' : 'disabled'} id="btn-cfg">${nueva ? 'Crear actividad' : 'Guardar cambios'}</button>
+        ${C.dirty && (S.act || C.nueva) ? `<button class="btn" data-act="cfg-descartar">${nueva && S.act ? 'Cancelar' : 'Descartar cambios'}</button>` : ''}
+        <span class="hint">${D.nombre.trim() ? '' : 'Escribe el nombre de la actividad.'}</span>
+      </div>
+    </section>
+    <div class="grid">
+      ${!nueva ? `<section class="card"><h3>Resumen</h3>
+        <dl class="info-list">
+          <div><dt>Estado</dt><dd><span class="pill ${S.act.estado === 'Entregada' ? 'ok' : 'piso'}">${esc(S.act.estado || ESTADOS[0])}</span></dd></div>
+          <div><dt>Periodo</dt><dd>${esc(fmtD(S.act.inicio) || '—')}${S.act.fin ? ' → ' + esc(fmtD(S.act.fin)) : ''}</dd></div>
+          <div><dt>Detalles</dt><dd>${S.detalles.length} registrados · ${pend} pendientes</dd></div>
+          <div><dt>Pisos</dt><dd>${esc(compactarLista(pisosAct()) || '—')}</dd></div>
+        </dl></section>
+      <section class="card"><h3>Zona de cuidado</h3>
+        <p class="hint" style="margin:0 0 10px">Borrar la actividad elimina también sus ${S.detalles.length} detalles y fotos.</p>
+        ${C.confirmBorrar ? `<span class="confirm">¿Borrar “${esc(S.act.nombre)}” para siempre? <button class="btn sm danger" data-act="act-borrar-ok">Sí, borrar</button><button class="btn sm" data-act="act-borrar-no">No</button></span>`
+          : `<button class="btn danger" data-act="act-borrar">Borrar actividad</button>`}
+      </section>` : `<section class="card"><div class="banner info">Cada actividad lleva su propio registro de detalles y su reporte. Cambia de actividad desde el selector de arriba.</div></section>`}
+      ${!S.assets ? `<div class="banner">Las fotos se guardan dentro de cada registro, más livianas. Para guardarlas en tamaño completo abre la app con una cuenta que pueda editarla.</div>` : ''}
+    </div>
+  </div>`;
+}
+async function guardarCfg() {
+  const C = S.cfg, D = C.draft, nueva = C.nueva || !S.act;
+  if (!D.nombre.trim()) return;
+  const data = { nombre: D.nombre.trim(), obra: D.obra.trim(), torre: D.torre.trim(), contratista: D.contratista.trim(), responsable: D.responsable.trim(), residente: D.residente.trim(),
+    inicio: D.inicio, fin: D.fin, estado: D.estado, alcance: D.alcance.trim(), pisos: expandirLista(D.pisos), ubicaciones: [...new Set(D.ubicaciones.split(/[,;\n]/).map(u => u.trim()).filter(Boolean))],
+    editado: new Date().toISOString() };
+  let id = S.actId;
+  const ok = await run(async () => {
+    if (nueva) { id = slug(data.nombre + (data.torre ? '-' + data.torre : '')) + '-' + uid().slice(-4); data.creado = data.editado; }
+    const { id: _id, ...antes } = S.act || {};
+    await S.db.doc('actividades/' + id).set(nueva ? data : { ...antes, ...data });
+  }, nueva ? 'Actividad creada' : 'Información guardada');
+  if (!ok) return;
+  S.cfg = { draft: null, dirty: false, nueva: false, confirmBorrar: false };
+  if (nueva) { ls.set('act', id); S.actId = null; S.act = null; selectAct(id); S.act = S.act || { ...data, id }; }
+  render();
+}
+async function borrarActividad() {
+  const id = S.actId, dets = S.detalles.slice();
+  const ok = await run(async () => {
+    for (const d of dets) { await S.db.doc(`actividades/${id}/detalles/${d.id}`).delete(); await borrarAsset(d.foto); }
+    await S.db.doc('actividades/' + id).delete();
+  }, 'Actividad borrada');
+  if (ok) { S.cfg = { draft: null, dirty: false, nueva: false, confirmBorrar: false }; ls.set('act', ''); }
+  render();
+}
+
+/* ---------- eventos ---------- */
+async function onClick(e) {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const v = b.dataset.v, d = v ? S.detalles.find(x => x.id === v) : null;
+  switch (b.dataset.act) {
+    case 'goto': irA(v); break;
+    case 'nueva-act': nuevaActividad(); break;
+    case 'filt-estado': S.filt.estado = v; renderReporte(); break;
+    case 'filt-limpiar': S.filt = { piso: '', ubicacion: '', estado: '', desde: '', hasta: '', q: '' }; renderReporte(); break;
+    case 'ver': verFoto(d); break;
+    case 'editar': if (d) editar(d); break;
+    case 'borrar': S.confirm = v; renderReporte(); break;
+    case 'borrar-no': S.confirm = null; renderReporte(); break;
+    case 'borrar-ok': if (d) { await run(async () => { await S.db.doc(`actividades/${S.actId}/detalles/${d.id}`).delete(); await borrarAsset(d.foto); }, 'Detalle borrado'); } S.confirm = null; render(); break;
+    case 'estado': if (d) {
+      const corr = d.estado !== 'corregido';
+      await run(() => S.db.doc(`actividades/${S.actId}/detalles/${d.id}`).update(corr ? { estado: 'corregido', corregido: today, editado: new Date().toISOString() } : { estado: 'pendiente', corregido: '', editado: new Date().toISOString() }), corr ? 'Marcado como corregido' : 'Detalle reabierto');
+    } break;
+    case 'pdf': generarPdf(); break;
+    case 'ubic-chip': S.form.ubicacion = S.form.ubicacion === v ? '' : v; $('#f-ubic').value = S.form.ubicacion; document.querySelectorAll('[data-act="ubic-chip"]').forEach(c => c.setAttribute('aria-pressed', c.dataset.v === S.form.ubicacion)); break;
+    case 'guardar': guardarDetalle(); break;
+    case 'cancelar-edicion': limpiarForm(); irA('reporte'); break;
+    case 'cfg-estado': S.cfg.draft.estado = v; S.cfg.dirty = true; renderAjustes(); break;
+    case 'cfg-guardar': guardarCfg(); break;
+    case 'cfg-descartar': S.cfg = { draft: null, dirty: false, nueva: false, confirmBorrar: false }; render(); break;
+    case 'act-borrar': S.cfg.confirmBorrar = true; renderAjustes(); break;
+    case 'act-borrar-no': S.cfg.confirmBorrar = false; renderAjustes(); break;
+    case 'act-borrar-ok': borrarActividad(); break;
+  }
+}
+function onChange(e) {
+  const t = e.target;
+  if (t.id === 'foto-file') { if (t.files[0]) tomarFoto(t.files[0]); t.value = ''; return; }
+  if (t.dataset.filt && t.dataset.filt !== 'q') { S.filt[t.dataset.filt] = t.value; renderReporte(); return; }
+  if (t.dataset.form) { S.form[t.dataset.form] = t.value; validarForm(); }
+}
+let qT;
+function onInput(e) {
+  const t = e.target;
+  if (t.dataset.form) {
+    S.form[t.dataset.form] = t.value; validarForm();
+    if (t.dataset.form === 'ubicacion') document.querySelectorAll('[data-act="ubic-chip"]').forEach(c => c.setAttribute('aria-pressed', c.dataset.v === t.value));
+  }
+  if (t.dataset.filt === 'q') { S.filt.q = t.value; clearTimeout(qT); qT = setTimeout(() => { const pos = t.selectionStart; renderReporte(); const n = $('[data-filt="q"]'); n.focus(); n.setSelectionRange(pos, pos); }, 250); }
+  if (t.dataset.cfg) {
+    S.cfg.draft[t.dataset.cfg] = t.value; S.cfg.dirty = true;
+    if (t.dataset.cfg === 'nombre') { const btn = $('#btn-cfg'); if (btn) btn.disabled = !t.value.trim(); }
+    if (t.dataset.cfg === 'pisos') { const n = expandirLista(t.value).length; $('#c-pisos-n').textContent = n ? n + ' pisos' : ''; }
+  }
+}
+
+/* ---------- reporte PDF ---------- */
+const LIBS_PDF = ['https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js', 'https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js'];
+let libsPdf = null;
+function cargarLibsPdf() {
+  if (libsPdf) return libsPdf;
+  libsPdf = LIBS_PDF.reduce((p, src) => p.then(() => new Promise((ok, ko) => {
+    const el = document.createElement('script'); el.src = src; el.onload = ok; el.onerror = () => ko(new Error('carga')); document.head.appendChild(el);
+  })), Promise.resolve());
+  libsPdf.catch(() => { libsPdf = null; });
+  return libsPdf;
+}
+async function urlData(url) {
+  const r = await fetch(url); if (!r.ok) throw new Error('foto');
+  return blobData(await r.blob());
+}
+const PDFC = { navy: [30, 65, 100], ink: [22, 32, 46], grey: [96, 108, 124], line: [220, 226, 234], soft: [243, 246, 250], orange: [235, 104, 52], good: [12, 140, 60], acc: [31, 95, 214] };
+async function generarPdf() {
+  if (!S.dl) { toast('La descarga está disponible al abrir la página en claude.ai.'); return; }
+  const lista = filtrados(); if (!lista.length) return;
+  const btn = $('#btn-pdf'); const txt = btn?.innerHTML; if (btn) { btn.disabled = true; btn.textContent = 'Generando…'; }
+  try {
+    await cargarLibsPdf();
+    const logo = await urlData('marca/logo-blanco.png').catch(() => null);
+    const fotos = [];
+    for (const d of lista) fotos.push(d.foto ? await (d.foto.data ? Promise.resolve(d.foto.data) : urlData(fotoSrc(d.foto))).catch(() => null) : null);
+    const doc = construirPdf(lista, fotos, logo);
+    await S.dl.save({ filename: `Reporte-detalles-${slug(S.act.nombre)}-${today}.pdf`, data: doc.output('blob') });
+    toast('Reporte listo');
+  } catch (e) {
+    if (e?.code !== 'declined') { console.warn(e); toast(e?.message === 'carga' ? 'No se pudo cargar el generador de PDF. Revisa la conexión.' : 'No se pudo generar el reporte.'); }
+  } finally { if (btn) { btn.disabled = false; btn.innerHTML = txt; } }
+}
+function construirPdf(lista, fotos, logo) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210, H = 297, M = 14, CW = W - 2 * M, A = S.act, nros = numeros();
+  const font = (size, style = 'normal') => { doc.setFont('helvetica', style); doc.setFontSize(size); };
+  const color = c => doc.setTextColor(...c);
+  const ahora = new Date();
+  const pend = lista.filter(d => d.estado !== 'corregido').length, corr = lista.length - pend;
+
+  // encabezado
+  doc.setFillColor(...PDFC.navy); doc.rect(0, 0, W, 36, 'F');
+  if (logo) { try { doc.addImage(logo, 'PNG', M, 7, 44, 22.6); } catch {} }
+  color([255, 255, 255]); font(15, 'bold'); doc.text('Reporte de detalles', W - M, 15, { align: 'right' });
+  font(10); doc.text(doc.splitTextToSize(`${A.nombre}${A.torre ? ' · ' + A.torre : ''}`, 110), W - M, 21.5, { align: 'right' });
+  font(8.5); doc.setTextColor(200, 214, 232); doc.text(`Generado ${ahora.getDate()} ${MES[ahora.getMonth()]} ${ahora.getFullYear()} · ${pad(ahora.getHours())}:${pad(ahora.getMinutes())}`, W - M, 30, { align: 'right' });
+
+  // información de la actividad
+  let y = 44;
+  const info = [['Obra', [A.obra, A.torre].filter(Boolean).join(' · ')], ['Actividad', A.nombre], ['Contratista', A.contratista], ['Responsable de revisión', A.responsable], ['Residente', A.residente],
+    ['Periodo', (fmtD(A.inicio) || '—') + (A.fin ? ' → ' + fmtD(A.fin) : '')], ['Estado', A.estado], ['Filtro del reporte', filtrosTxt()]].filter(x => x[1]);
+  doc.autoTable({ startY: y, body: info, theme: 'plain', margin: { left: M, right: M }, styles: { fontSize: 9, cellPadding: { top: 1.3, bottom: 1.3, left: 2, right: 2 }, textColor: PDFC.ink },
+    columnStyles: { 0: { cellWidth: 46, textColor: PDFC.grey, fontStyle: 'bold' } } });
+  y = doc.lastAutoTable.finalY + 3;
+  if (A.alcance) { font(8.5); color(PDFC.grey); const t = doc.splitTextToSize('Alcance: ' + A.alcance, CW - 4); doc.text(t, M + 2, y + 3); y += t.length * 3.8 + 3; }
+
+  // resumen
+  const cajas = [['Detalles', lista.length, PDFC.ink], ['Pendientes', pend, PDFC.orange], ['Corregidos', corr, PDFC.good], ['Cierre', (lista.length ? Math.round(corr / lista.length * 100) : 0) + ' %', PDFC.acc]];
+  const bw = (CW - 9) / 4;
+  cajas.forEach(([l, v, c], i) => {
+    const x = M + i * (bw + 3);
+    doc.setFillColor(...PDFC.soft); doc.setDrawColor(...PDFC.line); doc.roundedRect(x, y, bw, 18, 2, 2, 'FD');
+    font(7.5, 'bold'); color(PDFC.grey); doc.text(l.toUpperCase(), x + 4, y + 6);
+    font(15, 'bold'); color(c); doc.text(String(v), x + 4, y + 14.5);
+  });
+  y += 24;
+
+  // tabla por piso
+  const porPiso = new Map();
+  for (const d of lista) { const k = String(d.piso); const x = porPiso.get(k) || { p: 0, c: 0, u: new Set() }; d.estado === 'corregido' ? x.c++ : x.p++; if (d.ubicacion) x.u.add(d.ubicacion); porPiso.set(k, x); }
+  const filas = [...porPiso.entries()].sort((a, b) => ordenPiso(a[0]) - ordenPiso(b[0]) || cmpTexto(a[0], b[0]))
+    .map(([p, x]) => [pisoTxt(p), [...x.u].sort(cmpTexto).join(', ') || '—', x.p, x.c, x.p + x.c]);
+  font(11, 'bold'); color(PDFC.navy); doc.text('Detalles por piso', M, y); y += 2.5;
+  doc.autoTable({ startY: y, head: [['Piso', 'Ubicaciones', 'Pendientes', 'Corregidos', 'Total']], body: filas, theme: 'grid', margin: { left: M, right: M, top: 18, bottom: 16 },
+    styles: { fontSize: 8.5, cellPadding: 1.8, lineColor: PDFC.line, textColor: PDFC.ink }, headStyles: { fillColor: PDFC.navy, textColor: 255, fontStyle: 'bold' },
+    columnStyles: { 0: { cellWidth: 26 }, 2: { halign: 'right', cellWidth: 22 }, 3: { halign: 'right', cellWidth: 22 }, 4: { halign: 'right', cellWidth: 16, fontStyle: 'bold' } } });
+  y = doc.lastAutoTable.finalY + 8;
+
+  // registro fotográfico: dos detalles por fila
+  const gap = 6, cw = (CW - gap) / 2, ph = cw * 0.75, top = 18;
+  const altoTexto = d => { font(8.5); return Math.min(6, doc.splitTextToSize(d.descripcion || '', cw - 6).length) * 3.7; };
+  if (y > H - 40) { doc.addPage(); y = top; }
+  font(11, 'bold'); color(PDFC.navy); doc.text('Registro fotográfico', M, y); y += 4;
+  for (let i = 0; i < lista.length; i += 2) {
+    const par = lista.slice(i, i + 2);
+    const ch = ph + 16 + Math.max(...par.map(altoTexto));
+    if (y + ch > H - 14) { doc.addPage(); y = top; }
+    par.forEach((d, j) => {
+      const x = M + j * (cw + gap), f = fotos[i + j], ok = d.estado === 'corregido';
+      doc.setDrawColor(...PDFC.line); doc.setFillColor(255, 255, 255); doc.roundedRect(x, y, cw, ch, 2, 2, 'FD');
+      doc.setFillColor(...PDFC.soft); doc.rect(x + 0.3, y + 0.3, cw - 0.6, ph, 'F');
+      if (f) {
+        const fw = d.foto?.w || 4, fh = d.foto?.h || 3, k = Math.min((cw - 0.6) / fw, ph / fh), iw = fw * k, ih = fh * k;
+        try { doc.addImage(f, /^data:image\/png/.test(f) ? 'PNG' : 'JPEG', x + (cw - iw) / 2, y + (ph - ih) / 2, iw, ih, undefined, 'FAST'); } catch (err) { console.warn(err); }
+      } else { font(8); color(PDFC.grey); doc.text('Sin foto', x + cw / 2, y + ph / 2, { align: 'center' }); }
+      // número y estado sobre la foto
+      doc.setFillColor(...PDFC.navy); doc.roundedRect(x + 3, y + 3, 12, 5.5, 1.2, 1.2, 'F'); font(7.5, 'bold'); color([255, 255, 255]); doc.text('#' + nros[d.id], x + 9, y + 6.9, { align: 'center' });
+      doc.setFillColor(...(ok ? PDFC.good : PDFC.orange)); doc.roundedRect(x + cw - 23, y + 3, 20, 5.5, 1.2, 1.2, 'F'); doc.text(ok ? 'Corregido' : 'Pendiente', x + cw - 13, y + 6.9, { align: 'center' });
+      let ty = y + ph + 5.5;
+      font(9, 'bold'); color(PDFC.navy); doc.text(doc.splitTextToSize(pisoTxt(d.piso) + (d.ubicacion ? ' · ' + d.ubicacion : ''), cw - 6)[0], x + 3, ty);
+      font(7.5); color(PDFC.grey); doc.text(fmtD(d.fecha) + (ok && d.corregido ? ' · corregido ' + fmtD(d.corregido) : ''), x + cw - 3, ty, { align: 'right' });
+      ty += 5; font(8.5); color(PDFC.ink);
+      const lineas = doc.splitTextToSize(d.descripcion || '', cw - 6);
+      doc.text(lineas.length > 6 ? [...lineas.slice(0, 5), lineas[5] + '…'] : lineas, x + 3, ty);
+    });
+    y += ch + gap;
+  }
+
+  // pie de página
+  const n = doc.getNumberOfPages();
+  for (let p = 1; p <= n; p++) {
+    doc.setPage(p); font(7.5); color(PDFC.grey);
+    doc.text(`${A.nombre}${A.obra ? ' · ' + A.obra : ''} · Reporte de detalles`, M, H - 7);
+    doc.text(`Página ${p} de ${n}`, W - M, H - 7, { align: 'right' });
+  }
+  return doc;
+}
+
+boot();
+})();
+</script>
