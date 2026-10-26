@@ -9,8 +9,8 @@ App para llevar el registro fotográfico de los detalles que quedan en la revisi
 | Pestaña | Qué hace |
 |---|---|
 | Reporte | Filtros por piso, ubicación, estado (pendiente / corregido), fechas y texto. Muestra totales, cierre en %, detalles por piso y las tarjetas con foto. Cada detalle se marca **Corregido** (o se reabre), se edita o se borra. **Descargar reporte PDF** arma el informe con lo filtrado. |
-| Registrar | Foto, piso, ubicación y descripción (más la fecha de revisión, hoy por defecto). En el celular abre la cámara; en el computador se puede arrastrar la imagen. Las ubicaciones frecuentes salen como botones rápidos. |
-| Ajustes | Información de la actividad: nombre, obra, torre o etapa, contratista, responsable de la revisión, residente, fechas, estado, alcance, pisos (`1-12, Cubierta`) y ubicaciones frecuentes. Crear otra actividad o borrarla. |
+| Registrar | Foto, piso, ubicación y descripción (más la fecha de revisión, hoy por defecto). En el celular abre la cámara; en el computador se puede arrastrar la imagen. La ubicación se elige de un listado desplegable con las ubicaciones frecuentes; si no está, “Otra ubicación…” permite escribirla. |
+| Ajustes | Información de la actividad: nombre, obra, torre o etapa, contratista, responsable de la revisión, residente, fechas, estado, alcance, pisos (`1-12, Cubierta`) y ubicaciones frecuentes (una por línea). Crear otra actividad o borrarla. |
 
 Navegación: menú lateral en computador, solo íconos en pantallas medianas y barra inferior en el celular.
 

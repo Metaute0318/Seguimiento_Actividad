@@ -326,6 +326,7 @@ const compactarLista = list => {
   }
   return out.join(', ');
 };
+const listaLineas = txt => [...new Set(String(txt || '').split('\n').map(u => u.trim()).filter(Boolean))];
 const pisoTxt = p => /^-?\d+$/.test(String(p)) ? 'Piso ' + p : String(p || '—');
 
 let toastT;
@@ -369,7 +370,7 @@ function aplicarTema(t) {
 
 /* ---------- estado ---------- */
 const ESTADOS = ['En ejecución', 'En revisión', 'Entregada'];
-const nuevoForm = () => ({ editId: null, fecha: today, piso: ls.get('piso') || '', ubicacion: '', descripcion: '', foto: null, fotoGuardada: null });
+const nuevoForm = () => ({ editId: null, fecha: today, piso: ls.get('piso') || '', ubicacion: '', ubicOtra: false, descripcion: '', foto: null, fotoGuardada: null });
 const S = {
   db: null, assets: null, dl: null, offline: false, loaded: false,
   acts: [], actId: null, act: null, detalles: [], detLoaded: false, unsub: null,
@@ -621,7 +622,8 @@ function validarForm() {
 }
 function renderRegistrar() {
   const F = S.form, ed = F.editId && S.detalles.find(d => d.id === F.editId);
-  const pisos = pisosAct();
+  const pisos = pisosAct(), ubics = ubicAct();
+  const otra = ubics.length && (F.ubicOtra || (F.ubicacion && !ubics.includes(F.ubicacion)));
   $('#main').innerHTML = `
   <div class="reg-grid">
     <section class="card form" id="reg-form">
@@ -633,11 +635,12 @@ function renderRegistrar() {
         <div class="field"><label for="f-piso">Piso</label>
           ${pisos.length ? `<select id="f-piso" data-form="piso">${opts(pisos.includes(F.piso) || !F.piso ? pisos.map(p => ({ v: p, l: pisoTxt(p) })) : [...pisos.map(p => ({ v: p, l: pisoTxt(p) })), { v: F.piso, l: pisoTxt(F.piso) }], F.piso, 'Elige el piso')}</select>`
             : `<input type="text" id="f-piso" data-form="piso" value="${esc(F.piso)}" placeholder="Ej.: 7">`}</div>
-        <div class="field"><label for="f-ubic">Ubicación</label>
-          <input type="text" id="f-ubic" data-form="ubicacion" list="dl-ubic" value="${esc(F.ubicacion)}" placeholder="Ej.: Apto 702, baño social" autocomplete="off">
-          <datalist id="dl-ubic">${valoresUsados('ubicacion', ubicAct()).sort(cmpTexto).map(u => `<option value="${esc(u)}">`).join('')}</datalist></div>
+        <div class="field"><label for="${ubics.length ? 'f-ubic-sel' : 'f-ubic'}">Ubicación</label>
+          ${ubics.length ? `<select id="f-ubic-sel">${opts(ubics, otra ? '' : F.ubicacion, 'Elige la ubicación')}<option value="__otra__"${otra ? ' selected' : ''}>Otra ubicación…</option></select>` : ''}
+          ${!ubics.length || otra ? `<input type="text" id="f-ubic" data-form="ubicacion" list="dl-ubic" value="${esc(F.ubicacion)}" placeholder="${ubics.length ? 'Escribe la ubicación' : 'Ej.: Apto 702, baño social'}" autocomplete="off" aria-label="Ubicación">
+          <datalist id="dl-ubic">${valoresUsados('ubicacion', ubics).sort(cmpTexto).map(u => `<option value="${esc(u)}">`).join('')}</datalist>` : ''}
+          ${ubics.length ? '' : `<span class="hint">Agrega las ubicaciones frecuentes en Ajustes para elegirlas de un listado.</span>`}</div>
       </div>
-      ${ubicAct().length ? `<div class="chips" aria-label="Ubicaciones frecuentes">${ubicAct().map(u => `<button type="button" class="chip" data-act="ubic-chip" data-v="${esc(u)}" aria-pressed="${F.ubicacion === u}">${esc(u)}</button>`).join('')}</div>` : ''}
       <div class="field"><label for="f-desc">Descripción del detalle</label><textarea id="f-desc" data-form="descripcion" rows="3" placeholder="Qué quedó pendiente y qué hay que corregir…">${esc(F.descripcion)}</textarea></div>
       <div class="row2">
         <div class="field"><label for="f-fecha">Fecha de revisión</label><input type="date" id="f-fecha" data-form="fecha" value="${esc(F.fecha)}" max="${today}"></div>
@@ -693,11 +696,12 @@ const CAMPOS = [
 function borradorCfg(a) {
   return { nombre: a?.nombre || '', obra: a?.obra || '', torre: a?.torre || '', contratista: a?.contratista || '', responsable: a?.responsable || '', residente: a?.residente || '',
     inicio: a?.inicio || today, fin: a?.fin || '', estado: a?.estado || ESTADOS[0], alcance: a?.alcance || '',
-    pisos: compactarLista(a?.pisos || []), ubicaciones: (a?.ubicaciones || []).join(', ') };
+    pisos: compactarLista(a?.pisos || []), ubicaciones: (a?.ubicaciones || []).join('\n') };
 }
 function renderAjustes() {
   const C = S.cfg;
-  if (!C.draft) C.draft = borradorCfg(C.nueva ? null : S.act);
+  // sin cambios pendientes el formulario muestra siempre lo guardado
+  if (!C.dirty || !C.draft) C.draft = borradorCfg(C.nueva ? null : S.act);
   const D = C.draft, nueva = C.nueva || !S.act;
   const pisosPrev = expandirLista(D.pisos);
   const pend = S.detalles.filter(d => d.estado !== 'corregido').length;
@@ -714,7 +718,7 @@ function renderAjustes() {
       <div class="field"><label>Estado de la actividad</label><div class="seg">${ESTADOS.map(e => `<button type="button" data-act="cfg-estado" data-v="${esc(e)}" aria-pressed="${D.estado === e}">${esc(e)}</button>`).join('')}</div></div>
       <div class="field"><label for="c-alcance">Alcance y observaciones</label><textarea id="c-alcance" data-cfg="alcance" rows="3" placeholder="Qué incluye la actividad, especificaciones, criterios de recibo…">${esc(D.alcance)}</textarea></div>
       <div class="field"><label for="c-pisos">Pisos <span class="hint" id="c-pisos-n">${pisosPrev.length ? pisosPrev.length + ' pisos' : ''}</span></label><input type="text" id="c-pisos" data-cfg="pisos" value="${esc(D.pisos)}" placeholder="Ej.: 1-12, Cubierta"><span class="hint">Rangos con guion y separados por coma. Aparecen como lista en Registrar.</span></div>
-      <div class="field"><label for="c-ubic">Ubicaciones frecuentes</label><input type="text" id="c-ubic" data-cfg="ubicaciones" value="${esc(D.ubicaciones)}" placeholder="Ej.: Apto 01, Apto 02, Hall, Escalera"><span class="hint">Separadas por coma. Salen como botones rápidos al registrar; también se puede escribir otra.</span></div>
+      <div class="field"><label for="c-ubic">Ubicaciones frecuentes <span class="hint" id="c-ubic-n">${listaLineas(D.ubicaciones).length ? listaLineas(D.ubicaciones).length + ' ubicaciones' : ''}</span></label><textarea id="c-ubic" data-cfg="ubicaciones" rows="6" placeholder="Una por línea, por ejemplo:&#10;Apto 01&#10;Apto 02&#10;Hall&#10;Escalera">${esc(D.ubicaciones)}</textarea><span class="hint">Una ubicación por línea. Al registrar se eligen de un listado desplegable; si no está, se escoge “Otra ubicación…” y se escribe.</span></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button class="btn primary" data-act="cfg-guardar" ${D.nombre.trim() ? '' : 'disabled'} id="btn-cfg">${nueva ? 'Crear actividad' : 'Guardar cambios'}</button>
         ${C.dirty && (S.act || C.nueva) ? `<button class="btn" data-act="cfg-descartar">${nueva && S.act ? 'Cancelar' : 'Descartar cambios'}</button>` : ''}
@@ -742,7 +746,7 @@ async function guardarCfg() {
   const C = S.cfg, D = C.draft, nueva = C.nueva || !S.act;
   if (!D.nombre.trim()) return;
   const data = { nombre: D.nombre.trim(), obra: D.obra.trim(), torre: D.torre.trim(), contratista: D.contratista.trim(), responsable: D.responsable.trim(), residente: D.residente.trim(),
-    inicio: D.inicio, fin: D.fin, estado: D.estado, alcance: D.alcance.trim(), pisos: expandirLista(D.pisos), ubicaciones: [...new Set(D.ubicaciones.split(/[,;\n]/).map(u => u.trim()).filter(Boolean))],
+    inicio: D.inicio, fin: D.fin, estado: D.estado, alcance: D.alcance.trim(), pisos: expandirLista(D.pisos), ubicaciones: listaLineas(D.ubicaciones),
     editado: new Date().toISOString() };
   let id = S.actId;
   const ok = await run(async () => {
@@ -752,7 +756,7 @@ async function guardarCfg() {
   }, nueva ? 'Actividad creada' : 'Información guardada');
   if (!ok) return;
   S.cfg = { draft: null, dirty: false, nueva: false, confirmBorrar: false };
-  if (nueva) { ls.set('act', id); S.actId = null; S.act = null; selectAct(id); S.act = S.act || { ...data, id }; }
+  if (nueva) { if (!S.acts.some(a => a.id === id)) S.acts = [...S.acts, { ...data, id }]; ls.set('act', id); selectAct(id); }
   render();
 }
 async function borrarActividad() {
@@ -784,7 +788,6 @@ async function onClick(e) {
       await run(() => S.db.doc(`actividades/${S.actId}/detalles/${d.id}`).update(corr ? { estado: 'corregido', corregido: today, editado: new Date().toISOString() } : { estado: 'pendiente', corregido: '', editado: new Date().toISOString() }), corr ? 'Marcado como corregido' : 'Detalle reabierto');
     } break;
     case 'pdf': generarPdf(); break;
-    case 'ubic-chip': S.form.ubicacion = S.form.ubicacion === v ? '' : v; $('#f-ubic').value = S.form.ubicacion; document.querySelectorAll('[data-act="ubic-chip"]').forEach(c => c.setAttribute('aria-pressed', c.dataset.v === S.form.ubicacion)); break;
     case 'guardar': guardarDetalle(); break;
     case 'cancelar-edicion': limpiarForm(); irA('reporte'); break;
     case 'cfg-estado': S.cfg.draft.estado = v; S.cfg.dirty = true; renderAjustes(); break;
@@ -799,6 +802,11 @@ function onChange(e) {
   const t = e.target;
   if (t.id === 'foto-file') { if (t.files[0]) tomarFoto(t.files[0]); t.value = ''; return; }
   if (t.dataset.filt && t.dataset.filt !== 'q') { S.filt[t.dataset.filt] = t.value; renderReporte(); return; }
+  if (t.id === 'f-ubic-sel') {
+    const otra = t.value === '__otra__';
+    Object.assign(S.form, { ubicOtra: otra, ubicacion: otra ? '' : t.value });
+    renderRegistrar(); if (otra) $('#f-ubic')?.focus(); return;
+  }
   if (t.dataset.form) { S.form[t.dataset.form] = t.value; validarForm(); }
 }
 let qT;
@@ -806,12 +814,12 @@ function onInput(e) {
   const t = e.target;
   if (t.dataset.form) {
     S.form[t.dataset.form] = t.value; validarForm();
-    if (t.dataset.form === 'ubicacion') document.querySelectorAll('[data-act="ubic-chip"]').forEach(c => c.setAttribute('aria-pressed', c.dataset.v === t.value));
   }
   if (t.dataset.filt === 'q') { S.filt.q = t.value; clearTimeout(qT); qT = setTimeout(() => { const pos = t.selectionStart; renderReporte(); const n = $('[data-filt="q"]'); n.focus(); n.setSelectionRange(pos, pos); }, 250); }
   if (t.dataset.cfg) {
     S.cfg.draft[t.dataset.cfg] = t.value; S.cfg.dirty = true;
     if (t.dataset.cfg === 'nombre') { const btn = $('#btn-cfg'); if (btn) btn.disabled = !t.value.trim(); }
+    if (t.dataset.cfg === 'ubicaciones') { const n = listaLineas(t.value).length; $('#c-ubic-n').textContent = n ? n + ' ubicaciones' : ''; }
     if (t.dataset.cfg === 'pisos') { const n = expandirLista(t.value).length; $('#c-pisos-n').textContent = n ? n + ' pisos' : ''; }
   }
 }
