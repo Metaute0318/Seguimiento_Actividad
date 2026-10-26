@@ -8,8 +8,8 @@ App para llevar el registro fotográfico de los detalles que quedan en la revisi
 
 | Pestaña | Qué hace |
 |---|---|
-| Reporte | Filtros por piso, ubicación, estado (pendiente / corregido), fechas y texto. Muestra totales, cierre en %, detalles por piso y las tarjetas con foto. Cada detalle se marca **Corregido** (o se reabre), se edita o se borra. **Descargar reporte PDF** arma el informe con lo filtrado. |
-| Registrar | Foto, piso, ubicación y descripción (más la fecha de revisión, hoy por defecto). En el celular abre la cámara; en el computador se puede arrastrar la imagen. La ubicación se elige de un listado desplegable con las ubicaciones frecuentes; si no está, “Otra ubicación…” permite escribirla. |
+| Reporte | Filtros por piso, ubicación, momento (antes / después), estado (pendiente / corregido), fechas y texto. Muestra totales, cierre en %, detalles por piso y las tarjetas con foto. Cada detalle se marca **Corregido** (o se reabre), se edita o se borra. **Descargar reporte PDF** arma el informe con lo filtrado. |
+| Registrar | Foto, piso, ubicación, momento (**Antes** o **Después** de que empiecen a trabajar) y descripción, más la fecha de revisión (hoy por defecto). Piso, ubicación y momento se mantienen para el siguiente registro de la misma actividad (también al recargar), así que mientras se revisa el mismo apartamento solo se toma la foto y se escribe la descripción. En el celular abre la cámara; en el computador se puede arrastrar la imagen. La ubicación se elige de un listado desplegable con las ubicaciones frecuentes; si no está, “Otra ubicación…” permite escribirla. |
 | Ajustes | Información de la actividad: nombre, obra, torre o etapa, contratista, responsable de la revisión, residente, fechas, estado, alcance, pisos (`1-12, Cubierta`) y ubicaciones frecuentes (una por línea). Crear otra actividad o borrarla. |
 
 Navegación: menú lateral en computador, solo íconos en pantallas medianas y barra inferior en el celular.
@@ -24,7 +24,7 @@ La app guarda todo en la base de datos del artefacto:
 
 ```
 actividades/<id>                    información de la actividad (Ajustes)
-actividades/<id>/detalles/<detId>   { fecha, piso, ubicacion, descripcion, foto: {asset | data, w, h}, estado, corregido, creado, editado }
+actividades/<id>/detalles/<detId>   { fecha, piso, ubicacion, momento, descripcion, foto: {asset | data, w, h}, estado, corregido, creado, editado }
 ```
 
 Las fotos se reducen a 1600 px y se suben al almacenamiento del artefacto (solo quien puede editar). Si quien registra no tiene ese permiso, la foto va dentro del documento, reducida a 1100 px.

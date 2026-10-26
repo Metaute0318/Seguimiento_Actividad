@@ -178,6 +178,9 @@ textarea { resize: vertical; }
 .pill.piso { background: var(--accent-soft); color: var(--ink); }
 .pill.pend { background: color-mix(in srgb, var(--orange) 85%, #000 0%); color: #fff; box-shadow: 0 0 12px var(--glow-or); }
 .pill.ok { background: var(--good); color: #04130a; }
+.pill.mom { background: transparent; box-shadow: inset 0 0 0 1px var(--line-2); }
+.pill.mom.antes { color: var(--accent-2); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-2) 55%, transparent); }
+.pill.mom.despues { color: var(--good-ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--good) 55%, transparent); }
 .list { display: grid; }
 .list-row { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
 .list-row:first-child { border-top: 0; }
@@ -370,14 +373,18 @@ function aplicarTema(t) {
 
 /* ---------- estado ---------- */
 const ESTADOS = ['En ejecución', 'En revisión', 'Entregada'];
-const nuevoForm = () => ({ editId: null, fecha: today, piso: ls.get('piso') || '', ubicacion: '', ubicOtra: false, descripcion: '', foto: null, fotoGuardada: null });
+const MOMENTOS = ['Antes', 'Después'];
+// Último piso, ubicación y momento registrados en la actividad: el siguiente detalle arranca con ellos.
+let ultimo = {};
+const leerUltimo = id => { try { const u = JSON.parse(ls.get('ultimo.' + id) || '{}'); return u && typeof u === 'object' ? u : {}; } catch { return {}; } };
+const nuevoForm = () => ({ editId: null, fecha: today, piso: ultimo.piso || '', ubicacion: ultimo.ubicacion || '', ubicOtra: false, momento: ultimo.momento || '', descripcion: '', foto: null, fotoGuardada: null });
 const S = {
   db: null, assets: null, dl: null, offline: false, loaded: false,
   acts: [], actId: null, act: null, detalles: [], detLoaded: false, unsub: null,
   tab: TABS.some(t => t[0] === ls.get('tab')) ? ls.get('tab') : 'reporte', busy: false,
   fotoUrl: {},
   form: nuevoForm(),
-  filt: { piso: '', ubicacion: '', estado: '', desde: '', hasta: '', q: '' },
+  filt: { piso: '', ubicacion: '', momento: '', estado: '', desde: '', hasta: '', q: '' },
   confirm: null,
   cfg: { draft: null, dirty: false, nueva: false, confirmBorrar: false },
 };
@@ -410,7 +417,8 @@ function selectAct(id) {
   if (S.unsub) { S.unsub(); S.unsub = null; }
   Object.assign(S, { actId: id, act: S.acts.find(a => a.id === id) || null, detalles: [], detLoaded: false, confirm: null });
   S.cfg = { draft: null, dirty: false, nueva: false, confirmBorrar: false };
-  S.filt = { piso: '', ubicacion: '', estado: '', desde: '', hasta: '', q: '' };
+  S.filt = { piso: '', ubicacion: '', momento: '', estado: '', desde: '', hasta: '', q: '' };
+  ultimo = id ? leerUltimo(id) : {};
   limpiarForm();
   if (id) ls.set('act', id);
   if (!id) { onData(); return; }
@@ -429,7 +437,8 @@ function onData() {
 const pisosAct = () => S.act?.pisos || [];
 const ubicAct = () => S.act?.ubicaciones || [];
 const ordenPiso = p => { const i = pisosAct().indexOf(String(p)); return i < 0 ? 1e6 : i; };
-const ordenar = list => list.slice().sort((a, b) => ordenPiso(a.piso) - ordenPiso(b.piso) || cmpTexto(String(a.piso), String(b.piso)) || cmpTexto(a.ubicacion || '', b.ubicacion || '') || (a.creado < b.creado ? -1 : 1));
+const ordenMomento = d => { const i = MOMENTOS.indexOf(d.momento); return i < 0 ? MOMENTOS.length : i; };
+const ordenar = list => list.slice().sort((a, b) => ordenPiso(a.piso) - ordenPiso(b.piso) || cmpTexto(String(a.piso), String(b.piso)) || cmpTexto(a.ubicacion || '', b.ubicacion || '') || ordenMomento(a) - ordenMomento(b) || (a.creado < b.creado ? -1 : 1));
 const fotoSrc = f => !f ? '' : f.data || S.fotoUrl[f.asset] || '/_blob/' + f.asset;
 const imgFoto = (f, alt) => f ? `<img src="${esc(fotoSrc(f))}" alt="${esc(alt)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'falta',textContent:'No se pudo cargar la foto'}))">` : `<div class="falta">Sin foto</div>`;
 // Numeración estable: orden de registro.
@@ -507,15 +516,17 @@ function filtrados() {
   return ordenar(S.detalles.filter(d =>
     (!f.piso || String(d.piso) === f.piso) &&
     (!f.ubicacion || d.ubicacion === f.ubicacion) &&
+    (!f.momento || d.momento === f.momento) &&
     (!f.estado || (f.estado === 'corregido' ? d.estado === 'corregido' : d.estado !== 'corregido')) &&
     (!f.desde || d.fecha >= f.desde) && (!f.hasta || d.fecha <= f.hasta) &&
-    (!q || [d.descripcion, d.ubicacion, pisoTxt(d.piso)].join(' ').toLowerCase().includes(q))));
+    (!q || [d.descripcion, d.ubicacion, d.momento, pisoTxt(d.piso)].join(' ').toLowerCase().includes(q))));
 }
 const valoresUsados = (k, base) => [...new Set([...base, ...S.detalles.map(d => String(d[k] ?? '')).filter(Boolean)])];
 function filtrosTxt() {
   const f = S.filt, p = [];
   if (f.piso) p.push(pisoTxt(f.piso));
   if (f.ubicacion) p.push('Ubicación: ' + f.ubicacion);
+  if (f.momento) p.push('Momento: ' + f.momento);
   if (f.estado) p.push(f.estado === 'corregido' ? 'Solo corregidos' : 'Solo pendientes');
   if (f.desde || f.hasta) p.push(`Fechas: ${f.desde ? fmtD(f.desde) : 'inicio'} – ${f.hasta ? fmtD(f.hasta) : 'hoy'}`);
   if (f.q.trim()) p.push(`Texto: "${f.q.trim()}"`);
@@ -529,7 +540,7 @@ function renderReporte() {
   const porPiso = new Map();
   for (const d of lista) { const k = String(d.piso); const x = porPiso.get(k) || { p: 0, c: 0 }; d.estado === 'corregido' ? x.c++ : x.p++; porPiso.set(k, x); }
   const maxP = Math.max(1, ...[...porPiso.values()].map(x => x.p + x.c));
-  const hayFiltro = f.piso || f.ubicacion || f.estado || f.desde || f.hasta || f.q.trim();
+  const hayFiltro = f.piso || f.ubicacion || f.momento || f.estado || f.desde || f.hasta || f.q.trim();
   $('#main').innerHTML = `
   <div class="grid">
     <section class="card">
@@ -543,10 +554,11 @@ function renderReporte() {
       <div class="filters">
         <label class="f"><span>Piso</span><select data-filt="piso">${opts(pisosUsados.map(p => ({ v: p, l: pisoTxt(p) })), f.piso, 'Todos')}</select></label>
         <label class="f"><span>Ubicación</span><select data-filt="ubicacion">${opts(ubic, f.ubicacion, 'Todas')}</select></label>
+        <div class="f"><span>Momento</span><div class="seg">${[['', 'Todos'], ...MOMENTOS.map(m => [m, m])].map(([v, l]) => `<button type="button" data-act="filt-momento" data-v="${esc(v)}" aria-pressed="${f.momento === v}">${esc(l)}</button>`).join('')}</div></div>
         <div class="f"><span>Estado</span><div class="seg">${[['', 'Todos'], ['pendiente', 'Pendientes'], ['corregido', 'Corregidos']].map(([v, l]) => `<button type="button" data-act="filt-estado" data-v="${v}" aria-pressed="${f.estado === v}">${l}</button>`).join('')}</div></div>
         <label class="f"><span>Desde</span><input type="date" data-filt="desde" value="${esc(f.desde)}"></label>
         <label class="f"><span>Hasta</span><input type="date" data-filt="hasta" value="${esc(f.hasta)}"></label>
-        <label class="f" style="flex:1 1 180px"><span>Buscar</span><input type="search" data-filt="q" value="${esc(f.q)}" placeholder="Descripción o ubicación…"></label>
+        <label class="f" style="flex:1 1 180px"><span>Buscar</span><input type="search" data-filt="q" value="${esc(f.q)}" placeholder="Descripción, ubicación…"></label>
       </div>
     </section>
     <div class="kpis">
@@ -568,12 +580,14 @@ function renderReporte() {
       : `<div class="det-grid">${lista.map(d => tarjeta(d, nros[d.id])).join('')}</div>`}
   </div>`;
 }
+const pillMomento = d => d.momento ? `<span class="pill mom ${d.momento === 'Antes' ? 'antes' : 'despues'}">${esc(d.momento)}</span>` : '';
+const lugar = d => pisoTxt(d.piso) + (d.ubicacion ? ' · ' + d.ubicacion : '') + (d.momento ? ' · ' + d.momento : '');
 function tarjeta(d, n) {
   const ok = d.estado === 'corregido';
   return `<article class="card det">
     <button type="button" class="ph" data-act="ver" data-v="${esc(d.id)}" aria-label="Ver foto del detalle ${n}">${imgFoto(d.foto, 'Detalle ' + n)}<span class="nro">#${n}</span><span class="est pill ${ok ? 'ok' : 'pend'}">${ok ? 'Corregido' : 'Pendiente'}</span></button>
     <div class="bd">
-      <div class="meta"><span class="pill piso">${esc(pisoTxt(d.piso))}</span>${d.ubicacion ? `<span class="pill">${esc(d.ubicacion)}</span>` : ''}</div>
+      <div class="meta"><span class="pill piso">${esc(pisoTxt(d.piso))}</span>${d.ubicacion ? `<span class="pill">${esc(d.ubicacion)}</span>` : ''}${pillMomento(d)}</div>
       <p>${esc(d.descripcion)}</p>
       <div class="ft">
         <span class="hint">${esc(fmtD(d.fecha))}${ok && d.corregido ? ' · corregido ' + esc(fmtD(d.corregido)) : ''}</span>
@@ -588,15 +602,15 @@ function tarjeta(d, n) {
 function verFoto(d) {
   if (!d?.foto) return;
   const v = $('#visor'); $('img', v).src = fotoSrc(d.foto); $('img', v).alt = d.descripcion || '';
-  $('.cap span', v).textContent = `#${numeros()[d.id]} · ${pisoTxt(d.piso)}${d.ubicacion ? ' · ' + d.ubicacion : ''} — ${d.descripcion || ''}`;
+  $('.cap span', v).textContent = `#${numeros()[d.id]} · ${lugar(d)} — ${d.descripcion || ''}`;
   v.showModal();
 }
 
 /* ---------- pestaña: Registrar ---------- */
-function limpiarForm() { if (S.form.foto) URL.revokeObjectURL(S.form.foto.url); const piso = S.form.piso; S.form = nuevoForm(); if (piso) S.form.piso = piso; }
+function limpiarForm() { if (S.form?.foto) URL.revokeObjectURL(S.form.foto.url); S.form = nuevoForm(); }
 function editar(d) {
   limpiarForm();
-  Object.assign(S.form, { editId: d.id, fecha: d.fecha || today, piso: String(d.piso ?? ''), ubicacion: d.ubicacion || '', descripcion: d.descripcion || '', fotoGuardada: d.foto || null });
+  Object.assign(S.form, { editId: d.id, fecha: d.fecha || today, piso: String(d.piso ?? ''), ubicacion: d.ubicacion || '', momento: d.momento || '', descripcion: d.descripcion || '', fotoGuardada: d.foto || null });
   irA('registrar');
 }
 async function tomarFoto(file) {
@@ -613,11 +627,11 @@ function pintarDrop() {
   d.innerHTML = src ? `<img src="${esc(src)}" alt="Foto del detalle"><span class="btn sm cambiar">Cambiar foto</span>`
     : `${ICON.registrar}<b>Tomar o elegir foto</b><span class="hint">En el celular abre la cámara. En el computador puedes arrastrar la imagen aquí.</span>`;
 }
-const formValido = () => { const F = S.form; return F.piso.trim() && F.descripcion.trim() && (F.foto || F.fotoGuardada); };
+const formValido = () => { const F = S.form; return F.piso.trim() && F.momento && F.descripcion.trim() && (F.foto || F.fotoGuardada); };
 function validarForm() {
   const b = $('#btn-guardar'); if (b) b.disabled = !formValido();
   const h = $('#form-falta'); if (!h) return;
-  const F = S.form, falta = [!F.piso.trim() && 'piso', !F.descripcion.trim() && 'descripción', !(F.foto || F.fotoGuardada) && 'foto'].filter(Boolean);
+  const F = S.form, falta = [!F.piso.trim() && 'piso', !F.momento && 'momento', !F.descripcion.trim() && 'descripción', !(F.foto || F.fotoGuardada) && 'foto'].filter(Boolean);
   h.textContent = falta.length ? 'Falta: ' + falta.join(', ') + '.' : '';
 }
 function renderRegistrar() {
@@ -641,10 +655,12 @@ function renderRegistrar() {
           <datalist id="dl-ubic">${valoresUsados('ubicacion', ubics).sort(cmpTexto).map(u => `<option value="${esc(u)}">`).join('')}</datalist>` : ''}
           ${ubics.length ? '' : `<span class="hint">Agrega las ubicaciones frecuentes en Ajustes para elegirlas de un listado.</span>`}</div>
       </div>
-      <div class="field"><label for="f-desc">Descripción del detalle</label><textarea id="f-desc" data-form="descripcion" rows="3" placeholder="Qué quedó pendiente y qué hay que corregir…">${esc(F.descripcion)}</textarea></div>
       <div class="row2">
+        <div class="field"><label for="f-momento">Momento</label><select id="f-momento" data-form="momento">${opts(MOMENTOS, F.momento, 'Elige el momento')}</select></div>
         <div class="field"><label for="f-fecha">Fecha de revisión</label><input type="date" id="f-fecha" data-form="fecha" value="${esc(F.fecha)}" max="${today}"></div>
       </div>
+      ${ed ? '' : `<span class="hint" style="margin-top:-6px">Piso, ubicación y momento se mantienen para el siguiente registro; cámbialos solo cuando pases a otro sitio.</span>`}
+      <div class="field"><label for="f-desc">Descripción del detalle</label><textarea id="f-desc" data-form="descripcion" rows="3" placeholder="Qué quedó pendiente y qué hay que corregir…">${esc(F.descripcion)}</textarea></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <button type="button" class="btn primary" id="btn-guardar" data-act="guardar">${ed ? 'Guardar cambios' : 'Guardar detalle'}</button>
         <span class="hint" id="form-falta"></span>
@@ -660,7 +676,7 @@ function renderRecientes() {
   $('#rec-n').textContent = S.detalles.length ? `${S.detalles.length} en total` : '';
   box.innerHTML = rec.length ? `<div class="list">${rec.map(d => `<div class="list-row">
       <div class="th">${imgFoto(d.foto, '')}</div>
-      <div class="nm"><b>#${nros[d.id]} · ${esc(pisoTxt(d.piso))}${d.ubicacion ? ' · ' + esc(d.ubicacion) : ''}</b><span>${esc(d.descripcion)}</span></div>
+      <div class="nm"><b>#${nros[d.id]} · ${esc(lugar(d))}</b><span>${esc(d.descripcion)}</span></div>
       <button class="icon-btn" data-act="editar" data-v="${esc(d.id)}">Editar</button></div>`).join('')}</div>
       <div style="margin-top:12px"><button class="btn sm" data-act="goto" data-v="reporte">Ver reporte</button></div>`
     : `<div class="empty"><b>Sin detalles todavía</b>Lo que registres aparece aquí.</div>`;
@@ -671,7 +687,7 @@ async function guardarDetalle() {
   const ok = await run(async () => {
     const foto = F.foto ? await subirFoto(F.foto) : F.fotoGuardada;
     const ahora = new Date().toISOString(), id = F.editId || uid();
-    const doc = { fecha: F.fecha || today, piso: F.piso.trim(), ubicacion: F.ubicacion.trim(), descripcion: F.descripcion.trim(), foto,
+    const doc = { fecha: F.fecha || today, piso: F.piso.trim(), ubicacion: F.ubicacion.trim(), momento: F.momento, descripcion: F.descripcion.trim(), foto,
       estado: prev?.estado || 'pendiente', creado: prev?.creado || ahora, editado: ahora };
     if (prev?.corregido) doc.corregido = prev.corregido;
     await S.db.doc(`actividades/${S.actId}/detalles/${id}`).set(doc);
@@ -679,7 +695,7 @@ async function guardarDetalle() {
     if (prev && F.foto && prev.foto?.asset) await borrarAsset(prev.foto);
   }, prev ? 'Detalle actualizado' : 'Detalle guardado');
   if (!ok) return;
-  ls.set('piso', F.piso.trim());
+  if (!prev) { ultimo = { piso: F.piso.trim(), ubicacion: F.ubicacion.trim(), momento: F.momento }; ls.set('ultimo.' + S.actId, JSON.stringify(ultimo)); }
   limpiarForm();
   if (prev) irA('reporte'); else renderRegistrar();
 }
@@ -777,7 +793,8 @@ async function onClick(e) {
     case 'goto': irA(v); break;
     case 'nueva-act': nuevaActividad(); break;
     case 'filt-estado': S.filt.estado = v; renderReporte(); break;
-    case 'filt-limpiar': S.filt = { piso: '', ubicacion: '', estado: '', desde: '', hasta: '', q: '' }; renderReporte(); break;
+    case 'filt-momento': S.filt.momento = v; renderReporte(); break;
+    case 'filt-limpiar': S.filt = { piso: '', ubicacion: '', momento: '', estado: '', desde: '', hasta: '', q: '' }; renderReporte(); break;
     case 'ver': verFoto(d); break;
     case 'editar': if (d) editar(d); break;
     case 'borrar': S.confirm = v; renderReporte(); break;
@@ -910,7 +927,7 @@ function construirPdf(lista, fotos, logo) {
   font(11, 'bold'); color(PDFC.navy); doc.text('Registro fotográfico', M, y); y += 4;
   for (let i = 0; i < lista.length; i += 2) {
     const par = lista.slice(i, i + 2);
-    const ch = ph + 16 + Math.max(...par.map(altoTexto));
+    const ch = ph + 20 + Math.max(...par.map(altoTexto));
     if (y + ch > H - 14) { doc.addPage(); y = top; }
     par.forEach((d, j) => {
       const x = M + j * (cw + gap), f = fotos[i + j], ok = d.estado === 'corregido';
@@ -924,9 +941,9 @@ function construirPdf(lista, fotos, logo) {
       doc.setFillColor(...PDFC.navy); doc.roundedRect(x + 3, y + 3, 12, 5.5, 1.2, 1.2, 'F'); font(7.5, 'bold'); color([255, 255, 255]); doc.text('#' + nros[d.id], x + 9, y + 6.9, { align: 'center' });
       doc.setFillColor(...(ok ? PDFC.good : PDFC.orange)); doc.roundedRect(x + cw - 23, y + 3, 20, 5.5, 1.2, 1.2, 'F'); doc.text(ok ? 'Corregido' : 'Pendiente', x + cw - 13, y + 6.9, { align: 'center' });
       let ty = y + ph + 5.5;
-      font(9, 'bold'); color(PDFC.navy); doc.text(doc.splitTextToSize(pisoTxt(d.piso) + (d.ubicacion ? ' · ' + d.ubicacion : ''), cw - 6)[0], x + 3, ty);
-      font(7.5); color(PDFC.grey); doc.text(fmtD(d.fecha) + (ok && d.corregido ? ' · corregido ' + fmtD(d.corregido) : ''), x + cw - 3, ty, { align: 'right' });
-      ty += 5; font(8.5); color(PDFC.ink);
+      font(9, 'bold'); color(PDFC.navy); doc.text(doc.splitTextToSize(lugar(d), cw - 6)[0], x + 3, ty);
+      ty += 4; font(7.5); color(PDFC.grey); doc.text(fmtD(d.fecha) + (ok && d.corregido ? ' · corregido ' + fmtD(d.corregido) : ''), x + 3, ty);
+      ty += 4.5; font(8.5); color(PDFC.ink);
       const lineas = doc.splitTextToSize(d.descripcion || '', cw - 6);
       doc.text(lineas.length > 6 ? [...lineas.slice(0, 5), lineas[5] + '…'] : lineas, x + 3, ty);
     });
